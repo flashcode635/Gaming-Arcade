@@ -1,0 +1,546 @@
+@import "tailwindcss";
+
+@theme {
+  --color-neon-green: #00ff88;
+  --color-neon-cyan: #00e5ff;
+  --color-neon-teal: #14b8a6;
+  --color-dark-bg: #000000;
+  --color-dark-card: #0a0f0a;
+  --color-dark-surface: #0d1a0d;
+}
+
+body {
+  background: #000000;
+  min-height: 100vh;
+  isolation: isolate;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  overscroll-behavior: none;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ============ DARK MODE (Default) ============ */
+.neon-glow {
+  box-shadow: 0 0 5px rgba(0, 255, 136, 0.5), 0 0 20px rgba(0, 255, 136, 0.3), 0 0 40px rgba(0, 255, 136, 0.1);
+}
+
+.neon-glow-cyan {
+  box-shadow: 0 0 5px rgba(0, 229, 255, 0.5), 0 0 20px rgba(0, 229, 255, 0.3), 0 0 40px rgba(0, 229, 255, 0.1);
+}
+
+.neon-text {
+  text-shadow: 0 0 7px rgba(0, 255, 136, 0.7), 0 0 20px rgba(0, 255, 136, 0.4);
+}
+
+.neon-text-cyan {
+  text-shadow: 0 0 7px rgba(0, 229, 255, 0.7), 0 0 20px rgba(0, 229, 255, 0.4);
+}
+
+/* ============ LIGHT MODE ============ */
+body.light-mode {
+  background: #f0f7f0;
+  color: #1a1a1a;
+}
+
+/* Card backgrounds - greenish shades */
+body.light-mode .bg-dark-card,
+body.light-mode .bg-dark-card\/90 {
+  background: #e8f5e9 !important;
+  backdrop-filter: none !important;
+}
+
+body.light-mode .bg-dark-surface {
+  background: #c8e6c9 !important;
+}
+
+body.light-mode .bg-black\/50,
+body.light-mode .bg-black\/30,
+body.light-mode .bg-black\/60,
+body.light-mode .bg-black\/80 {
+  background: rgba(232, 245, 233, 0.95) !important;
+}
+
+/* Text colors - keep dark */
+body.light-mode .text-white {
+  color: #1b5e20 !important;
+}
+
+body.light-mode .text-gray-400 {
+  color: #555555 !important;
+}
+
+body.light-mode .text-gray-500 {
+  color: #666666 !important;
+}
+
+body.light-mode .text-gray-600 {
+  color: #777777 !important;
+}
+
+/* Neon effects - remove glow in light mode */
+body.light-mode .neon-glow {
+  box-shadow: 0 2px 8px rgba(0, 128, 0, 0.15);
+}
+
+body.light-mode .neon-glow-cyan {
+  box-shadow: 0 2px 8px rgba(0, 128, 128, 0.15);
+}
+
+body.light-mode .neon-text {
+  text-shadow: none;
+}
+
+body.light-mode .neon-text-cyan {
+  text-shadow: none;
+}
+
+/* Card hover - subtle shadow instead of neon */
+body.light-mode .card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 128, 0, 0.15);
+}
+
+/* Grid background - softer in light mode */
+body.light-mode .grid-bg {
+  background-image: 
+    linear-gradient(rgba(0, 128, 0, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 128, 0, 0.04) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+/* Border adjustments */
+body.light-mode .border-green-500\/20 {
+  border-color: rgba(0, 128, 0, 0.2) !important;
+}
+
+body.light-mode .border-green-500\/30 {
+  border-color: rgba(0, 128, 0, 0.25) !important;
+}
+
+body.light-mode .border-green-500\/40 {
+  border-color: rgba(0, 128, 0, 0.3) !important;
+}
+
+body.light-mode .border-cyan-500\/20 {
+  border-color: rgba(0, 128, 128, 0.2) !important;
+}
+
+body.light-mode .border-cyan-500\/30 {
+  border-color: rgba(0, 128, 128, 0.25) !important;
+}
+
+/* Keep accent colors visible */
+body.light-mode .text-green-400 {
+  color: #2e7d32 !important;
+}
+
+body.light-mode .text-cyan-400 {
+  color: #00838f !important;
+}
+
+body.light-mode .text-yellow-400 {
+  color: #f57f17 !important;
+}
+
+body.light-mode .text-red-400 {
+  color: #c62828 !important;
+}
+
+body.light-mode .text-teal-400 {
+  color: #00695c !important;
+}
+
+body.light-mode .text-orange-400 {
+  color: #e65100 !important;
+}
+
+/* Button adjustments */
+body.light-mode .bg-green-500\/10 {
+  background: rgba(0, 128, 0, 0.08) !important;
+}
+
+body.light-mode .bg-cyan-500\/10 {
+  background: rgba(0, 128, 128, 0.08) !important;
+}
+
+body.light-mode .bg-yellow-500\/10 {
+  background: rgba(245, 127, 23, 0.08) !important;
+}
+
+body.light-mode .bg-red-500\/10 {
+  background: rgba(198, 40, 40, 0.08) !important;
+}
+
+body.light-mode .bg-green-500\/5 {
+  background: rgba(0, 128, 0, 0.05) !important;
+}
+
+body.light-mode .hover\:bg-green-500\/10:hover {
+  background: rgba(0, 128, 0, 0.12) !important;
+}
+
+body.light-mode .hover\:bg-cyan-500\/10:hover {
+  background: rgba(0, 128, 128, 0.12) !important;
+}
+
+/* Nav bar */
+body.light-mode nav {
+  background: rgba(232, 245, 233, 0.95) !important;
+  border-bottom-color: rgba(0, 128, 0, 0.15) !important;
+}
+
+/* Game-specific adjustments */
+body.light-mode canvas {
+  border-color: rgba(0, 128, 0, 0.2) !important;
+}
+
+/* Fix black backgrounds in light mode */
+body.light-mode .bg-black {
+  background-color: #2d4a2d !important;
+}
+
+body.light-mode .bg-black\/80 {
+  background-color: rgba(45, 74, 45, 0.9) !important;
+}
+
+body.light-mode .bg-black\/60 {
+  background-color: rgba(45, 74, 45, 0.85) !important;
+}
+
+body.light-mode .bg-black\/50 {
+  background-color: rgba(45, 74, 45, 0.8) !important;
+}
+
+body.light-mode .bg-black\/30 {
+  background-color: rgba(45, 74, 45, 0.7) !important;
+}
+
+/* Inline black backgrounds */
+body.light-mode [style*="background: #000000"],
+body.light-mode [style*="background:#000000"] {
+  background-color: #2d4a2d !important;
+}
+
+body.light-mode .sudoku-cell {
+  border-color: rgba(0, 128, 0, 0.15);
+}
+
+body.light-mode .sudoku-cell.selected {
+  background: rgba(0, 128, 0, 0.1);
+  border-color: rgba(0, 128, 0, 0.4);
+}
+
+body.light-mode .sudoku-cell.given {
+  color: #1b5e20;
+  text-shadow: none;
+}
+
+body.light-mode .sudoku-cell.user-input {
+  color: #2e7d32;
+  text-shadow: none;
+}
+
+body.light-mode .sudoku-box-light {
+  background: rgba(0, 128, 0, 0.04);
+}
+
+body.light-mode .sudoku-box-dark {
+  background: rgba(0, 128, 128, 0.04);
+}
+
+body.light-mode .sudoku-border-right {
+  border-right-color: rgba(0, 128, 0, 0.4);
+  box-shadow: none;
+}
+
+body.light-mode .sudoku-border-bottom {
+  border-bottom-color: rgba(0, 128, 0, 0.4);
+  box-shadow: none;
+}
+
+/* Flip card adjustments */
+body.light-mode .flip-card-back {
+  background: #c8e6c9 !important;
+  border-color: rgba(0, 128, 0, 0.2) !important;
+}
+
+body.light-mode .flip-card-front {
+  background: #e8f5e9 !important;
+  border-color: rgba(0, 128, 0, 0.3) !important;
+}
+
+body.light-mode .flip-card-inner.matched {
+  animation: none;
+  box-shadow: 0 0 8px rgba(0, 128, 0, 0.3);
+}
+
+/* Gradient buttons keep their colors but adjust for light bg */
+body.light-mode .from-green-500 {
+  --tw-gradient-from: #43a047;
+}
+
+body.light-mode .to-cyan-500 {
+  --tw-gradient-to: #00897b;
+}
+
+/* Game board backgrounds */
+body.light-mode .bg-dark-surface.border.border-green-500\/20 {
+  background: #c8e6c9 !important;
+}
+
+/* Plinko canvas stays dark for contrast */
+body.light-mode .plinko-canvas {
+  background: #1a1a2e !important;
+}
+
+/* Scrollbar */
+body.light-mode ::-webkit-scrollbar {
+  width: 8px;
+}
+
+body.light-mode ::-webkit-scrollbar-track {
+  background: #e8f5e9;
+}
+
+body.light-mode ::-webkit-scrollbar-thumb {
+  background: #a5d6a7;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a0f0a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 136, 0.35);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 136, 0.6);
+}
+
+/* ============ COMMON STYLES ============ */
+.card-hover {
+  transition: all 0.3s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-5px) scale(1.02);
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes pulse-neon {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.animate-pulse-neon {
+  animation: pulse-neon 2s ease-in-out infinite;
+}
+
+.grid-bg {
+  background-image: 
+    linear-gradient(rgba(0, 255, 136, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 229, 255, 0.02) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+/* Sudoku styles */
+.sudoku-cell {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(0, 255, 136, 0.15);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+@media (min-width: 640px) {
+  .sudoku-cell {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+}
+
+.sudoku-cell:hover {
+  background: rgba(0, 255, 136, 0.08);
+}
+
+.sudoku-cell.selected {
+  background: rgba(0, 255, 136, 0.15);
+  border-color: rgba(0, 255, 136, 0.5);
+}
+
+.sudoku-cell.given {
+  color: #e8e8e8;
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3);
+}
+
+.sudoku-cell.user-input {
+  color: #00ff88;
+  text-shadow: 0 0 5px rgba(0, 255, 136, 0.5);
+}
+
+.sudoku-cell.error {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.sudoku-border-right {
+  border-right: 3px solid rgba(0, 255, 136, 0.6);
+  box-shadow: inset -1px 0 2px rgba(0, 255, 136, 0.2);
+}
+
+.sudoku-border-bottom {
+  border-bottom: 3px solid rgba(0, 255, 136, 0.6);
+  box-shadow: inset 0 -1px 2px rgba(0, 255, 136, 0.2);
+}
+
+.sudoku-box-light {
+  background: rgba(0, 255, 136, 0.03);
+}
+
+.sudoku-box-dark {
+  background: rgba(0, 229, 255, 0.03);
+}
+
+/* Memory card flip styles */
+.flip-card {
+  perspective: 600px;
+}
+
+.flip-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+}
+
+.flip-card-inner.flipped {
+  transform: rotateY(180deg);
+}
+
+.flip-card-front,
+.flip-card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flip-card-front {
+  transform: rotateY(180deg);
+}
+
+@keyframes card-match-pulse {
+  0%, 100% { box-shadow: 0 0 5px rgba(0, 255, 136, 0.3); }
+  50% { box-shadow: 0 0 20px rgba(0, 255, 136, 0.6), 0 0 40px rgba(0, 229, 255, 0.3); }
+}
+
+.flip-card-inner.matched {
+  animation: card-match-pulse 1.5s ease-in-out 2;
+}
+
+/* Range slider */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  border-radius: 4px;
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #00ff88;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+  border: 2px solid #000;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #00ff88;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+  border: 2px solid #000;
+}
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+  
+  button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  .card-hover:hover {
+    transform: translateY(-2px) scale(1.01);
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    width: 24px;
+    height: 24px;
+  }
+  
+  input[type="range"]::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+@supports (padding: max(0px)) {
+  body {
+    padding-left: max(0px, env(safe-area-inset-left));
+    padding-right: max(0px, env(safe-area-inset-right));
+    padding-bottom: max(0px, env(safe-area-inset-bottom));
+  }
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: max-content;
+  color: #ffffff;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+body.light-mode {
+  background-color: #f0f7f0;
+  color: #1a1a1a;
+}
