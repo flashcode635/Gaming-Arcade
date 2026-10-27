@@ -11,7 +11,7 @@ Every game costs **$1 per turn** from the in-game balance.
 
 | Game | Route | Description | Difficulty |
 | --- | --- | --- | --- |
-| Plinko | [`/plinko`](http://localhost:3000/plinko) | Drop the ball and aim for a high-value slot. | Easy |
+| Plinko | [`/plinko`](http://localhost:3000/plinko) | Drop the ball and aim for a high-value slot. | Hard |
 | Sudoku | [`/sudoku`](http://localhost:3000/sudoku) | Solve a classic number puzzle. | Medium |
 | Tic-Tac-Toe | [`/tictactoe`](http://localhost:3000/tictactoe) | Play against the AI or a friend. | Easy |
 | Snake | [`/snake`](http://localhost:3000/snake) | Grow the snake and beat your high score. | Medium |

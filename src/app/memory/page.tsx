@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata } from "next" ;
 import MemoryGame from "@/components/MemoryGame";
 
 export const metadata: Metadata = {

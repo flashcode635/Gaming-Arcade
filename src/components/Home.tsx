@@ -13,7 +13,7 @@ const games = [
     icon: PlinkoIcon,
     description: 'Drop the ball and win big!',
     color: 'from-green-500 to-cyan-500',
-    difficulty: 'Easy',
+    difficulty: 'Hard',
     costPerTurn: 1,
   },
   {
