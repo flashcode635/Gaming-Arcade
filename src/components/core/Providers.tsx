@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { GameCurrencyProvider } from "@/context/GameCurrencyContext";
 import { ThemeProvider } from "@/context/ThemeContext";
-import GameNav from "@/components/GameNav";
+import GameNav from "@/components/core/GameNav";
 
 export default function Providers({ children }: { children: ReactNode }) {
   return (
