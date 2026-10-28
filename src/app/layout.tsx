@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import Providers from "@/components/Providers";
-import Background from "@/components/Background";
+import Background from "@/components/ui/Background";
 import "./globals.css";
 
 export const metadata: Metadata = {

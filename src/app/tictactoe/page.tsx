@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import TicTacToe from "@/components/TicTacToe";
+import TicTacToe from "@/components/games/TicTacToe";
 
 export const metadata: Metadata = {
   title: "Tic-Tac-Toe",

@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { ResetIcon } from '../assets/svg/Icons';
-import { SnakeIcon } from '../assets/svg/GameIcons';
-import { useGameCurrency } from '../context/GameCurrencyContext';
+import { ResetIcon } from '../../assets/svg/Icons';
+import { SnakeIcon } from '../../assets/svg/GameIcons';
+import { useGameCurrency } from '../../context/GameCurrencyContext';
 
 type Position = { x: number; y: number };
 type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT';

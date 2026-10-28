@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useCallback } from 'react';
-import { ResetIcon } from '../assets/svg/Icons';
-import { useGameCurrency } from '../context/GameCurrencyContext';
+import { ResetIcon } from '../../assets/svg/Icons';
+import { useGameCurrency } from '../../context/GameCurrencyContext';
 
 type Cell = 'X' | 'O' | null;
 type Board = Cell[];

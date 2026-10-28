@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { ResetIcon } from '../assets/svg/Icons';
+import { ResetIcon } from '../../assets/svg/Icons';
 
 type Board = (number | null)[][];
 

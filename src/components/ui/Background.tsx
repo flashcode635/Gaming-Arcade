@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import type * as THREE_NS from 'three';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../../context/ThemeContext';
 
 type Floater = {
   mesh: THREE_NS.LineSegments;
@@ -158,14 +158,16 @@ export default function Background() {
       }
 
       // ─── Render Loop ───────────────────────────────────────────
-      const clock = new THREE.Clock();
-      let raf = 0;
+      const timer = new THREE.Timer();
+        timer.connect(document);
+        let raf = 0;
 
-      function animate() {
-        raf = requestAnimationFrame(animate);
+      function animate(timestamp: number) {
+  raf = requestAnimationFrame(animate);
 
-        const delta = clock.getDelta();
-        const elapsed = clock.elapsedTime;
+  timer.update(timestamp);
+  const delta = timer.getDelta();
+  const elapsed = timer.getElapsed();
 
         terrainUniforms.uTime.value = elapsed;
 
@@ -178,12 +180,12 @@ export default function Background() {
 
         renderer.render(scene, camera);
       }
-      animate();
+    raf = requestAnimationFrame(animate);
 
-      // ─── Cleanup ───────────────────────────────────────────────
-      cleanup = () => {
-        disposed = true;
-        cancelAnimationFrame(raf);
+cleanup = () => {
+  disposed = true;
+  cancelAnimationFrame(raf);
+  timer.dispose();
         window.removeEventListener('resize', onResize);
         geoTetra.dispose();
         geoIco.dispose();
