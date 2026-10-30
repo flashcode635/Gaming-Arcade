@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { TargetIcon, ResetIcon, NoCreditsIcon, WarningIcon, LightningIcon } from '../assets/svg/Icons';
-import { useGameCurrency } from '../context/GameCurrencyContext';
+import { TargetIcon, ResetIcon, NoCreditsIcon, WarningIcon, LightningIcon } from '@/assets/svg/Icons';
+import { useGameCurrency } from '@/context/GameCurrencyContext';
 
 interface Ball {
   id: number;

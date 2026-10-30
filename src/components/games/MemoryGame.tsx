@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { ResetIcon } from '../assets/svg/Icons';
-import { useGameCurrency } from '../context/GameCurrencyContext';
+import { ResetIcon } from '@/assets/svg/Icons';
+import { useGameCurrency } from '@/context/GameCurrencyContext';
 
 interface Card {
   id: number;

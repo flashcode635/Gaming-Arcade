@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import Providers from "@/components/core/Providers";
-import Background from "@/components/core/Background";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -22,7 +21,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en">
       <body>
         <Providers>
-          <Background />
           {children}
         </Providers>
       </body>

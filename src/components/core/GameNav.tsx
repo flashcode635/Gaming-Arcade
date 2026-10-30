@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { PlinkoIcon, SudokuIcon, TicTacToeIcon, SnakeIcon, MemoryIcon, MinesweeperIcon } from "@/assets/svg/GameIcons";
+import { PlinkoIcon, SudokuIcon, TicTacToeIcon, SnakeIcon, MemoryIcon, MinesweeperIcon, SettingsIcon } from "@/assets/svg/GameIcons";
 import { useGameCurrency } from "@/context/GameCurrencyContext";
 import { useTheme } from "@/context/ThemeContext";
 import type { GameType } from "@/lib/games";
@@ -52,6 +52,14 @@ export default function GameNav() {
           <span className="hidden sm:inline">{label}</span>
         </h2>
         <div className="flex items-center gap-2">
+          <Link
+            href="/settings"
+            className="p-2 rounded-lg bg-green-500/10 border border-green-500/30 hover:bg-green-500/20 text-green-400 hover:text-green-300 transition-colors flex items-center justify-center"
+            title="Settings"
+            aria-label="Settings"
+          >
+            <SettingsIcon className="w-5 h-5" />
+          </Link>
           <button
             onClick={() => setIsDarkMode(!isDarkMode)}
             className="p-2 rounded-lg bg-green-500/10 border border-green-500/30 hover:bg-green-500/20 transition-colors"

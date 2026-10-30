@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import type { GameType } from '@/lib/games';
 import { useTheme } from '../context/ThemeContext';
-import { PlinkoIcon, SudokuIcon, TicTacToeIcon, SnakeIcon, MemoryIcon, MinesweeperIcon, GamepadIcon, BoltIcon, TrophyIcon } from '../assets/svg/GameIcons';
+import { PlinkoIcon, SudokuIcon, TicTacToeIcon, SnakeIcon, MemoryIcon, MinesweeperIcon, GamepadIcon, BoltIcon, TrophyIcon, SettingsIcon } from '../assets/svg/GameIcons';
 import { useGameCurrency } from '../context/GameCurrencyContext';
 
 const games = [
@@ -105,6 +105,14 @@ export default function Home() {
                 </svg>
               )}
             </button>
+            <Link
+              href="/settings"
+              className="p-2 sm:p-2.5 rounded-lg bg-green-500/10 border border-green-500/30 hover:bg-green-500/20 text-green-400 hover:text-green-300 transition-colors flex items-center justify-center"
+              title="Settings"
+              aria-label="Settings"
+            >
+              <SettingsIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+            </Link>
           </div>
         </div>
         {/* Title Section */}

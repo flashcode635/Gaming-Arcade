@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Plinko from "@/components/Plinko";
+import Plinko from "@/components/games/Plinko";
 
 export const metadata: Metadata = {
   title: "Plinko",

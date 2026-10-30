@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from 'react';
-import { ResetIcon } from '../assets/svg/Icons';
-import { MinesweeperIcon } from '../assets/svg/GameIcons';
-import { useGameCurrency } from '../context/GameCurrencyContext';
+import { ResetIcon } from '@/assets/svg/Icons';
+import { MinesweeperIcon } from '@/assets/svg/GameIcons';
+import { useGameCurrency } from '@/context/GameCurrencyContext';
 
 type CellState = 'hidden' | 'revealed';
 type CellContent = 'gem' | 'mine';

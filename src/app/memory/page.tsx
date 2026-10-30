@@ -1,5 +1,5 @@
-import type { Metadata } from "next" ;
-import MemoryGame from "@/components/MemoryGame";
+import type { Metadata } from "next";
+import MemoryGame from "@/components/games/MemoryGame";
 
 export const metadata: Metadata = {
   title: "Memory Match",
