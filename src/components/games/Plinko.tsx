@@ -259,7 +259,7 @@ export default function Plinko() {
             </div>
           </div>
 
-          {recentRounds.length > 0 && (
+          {/* {recentRounds.length > 0 && (
             <div className="bg-dark-card/90 rounded-lg p-3 border border-green-500/10">
               <p className="text-gray-500 text-[10px] uppercase tracking-wider mb-2">
                 Recent rounds (server ledger)
@@ -283,7 +283,7 @@ export default function Plinko() {
                 })}
               </div>
             </div>
-          )}
+          )} */}
 
           <div className="space-y-2 sm:space-y-3">
             <button
