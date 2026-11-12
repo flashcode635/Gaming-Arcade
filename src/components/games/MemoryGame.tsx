@@ -134,7 +134,7 @@ export default function MemoryGame() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row md:gap-10 items-baseline justify-between px-4 sm:px-8 pt-2 sm:pt-4 pb-4 sm:pb-8 bg-black/70">
+    <div className="min-h-fit flex flex-col md:flex-row md:gap-10 items-baseline justify-between px-4 sm:px-8 pt-2 sm:pt-4 pb-1 sm:pb-2 bg-black/70">
        <div className="grid grid-cols-4 gap-3 sm:gap-4">
           <div className="bg-dark-surface rounded-lg sm:rounded-xl p-2 sm:p-3 text-center border border-green-500/20">
             <p className="text-gray-500 text-[10px] sm:text-xs">Time</p>

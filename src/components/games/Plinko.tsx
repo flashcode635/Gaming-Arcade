@@ -1,299 +1,245 @@
-"use client";
+'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { TargetIcon, ResetIcon, NoCreditsIcon, WarningIcon, LightningIcon } from '@/assets/svg/Icons';
 import { useGameCurrency } from '@/context/GameCurrencyContext';
+import { usePlinkoGame } from '@/hooks/usePlinkoPhysics';
+import {
+  BALL_RADIUS,
+  DROP_BET,
+  MULTIPLIERS,
+  PEG_RADIUS,
+  STARTING_BALANCE,
+  allPegs,
+  buildGeometry,
+  sampleBallPath,
+  slotCenterX,
+  type BoardGeometry,
+} from '@/engine/plinkoEngine';
+import type { ActiveBall, LandEvent } from '@/hooks/usePlinkoPhysics';
 
-interface Ball {
-  id: number;
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  color: string;
+/** Slot palette by payout tier (hue / saturation / lightness). */
+function slotHsl(multiplier: number): { hue: number; sat: number; light: number } {
+  if (multiplier >= 5) return { hue: 45, sat: 100, light: 55 };
+  if (multiplier >= 1.5) return { hue: 140, sat: 80, light: 50 };
+  if (multiplier >= 1) return { hue: 160, sat: 70, light: 50 };
+  if (multiplier >= 0.5) return { hue: 30, sat: 80, light: 50 };
+  return { hue: 0, sat: 80, light: 50 };
 }
 
-const ROWS = 12;
-const DISPLAY_ROWS = ROWS - 2;
-const PEG_RADIUS = 5;
-const BALL_RADIUS = 8;
-const GRAVITY = 0.3;
-const BOUNCE = 0.7;
-const FRICTION = 0.99;
-const DROP_COST = 1;
+const FLASH_MS = 700;
 
-const MULTIPLIERS = [5, 1.5, 1.25, 0.5, 0.25, 0.5, 1.25, 1.5, 5];
-const SLOT_WEIGHTS = [1, 1.2, 1.2, 1.3, 1.8, 1.3, 1.2, 1.2, 1];
-const TOTAL_WEIGHT = SLOT_WEIGHTS.reduce((a, b) => a + b, 0);
+interface FrameRefs {
+  ballsRef: React.MutableRefObject<ActiveBall[]>;
+  landEventsRef: React.MutableRefObject<LandEvent[]>;
+}
+
+/**
+ * The renderer is a pure function of (server path, startTime, now).
+ * No physics, no randomness on the client — the ball simply replays the
+ * direction array the server sealed for the round.
+ */
+function drawFrame(
+  ctx: CanvasRenderingContext2D,
+  g: BoardGeometry,
+  { ballsRef, landEventsRef }: FrameRefs,
+  now: number,
+) {
+  ctx.clearRect(0, 0, g.width, g.height);
+
+  // --- pegs -----------------------------------------------------------------
+  const pegs = allPegs(g);
+  ctx.fillStyle = '#00e5ff';
+  ctx.shadowColor = '#00e5ff';
+  for (const peg of pegs) {
+    ctx.beginPath();
+    ctx.arc(peg.x, peg.y, PEG_RADIUS, 0, Math.PI * 2);
+    ctx.shadowBlur = 5;
+    ctx.fill();
+  }
+  ctx.shadowBlur = 0;
+
+  // --- slots ----------------------------------------------------------------
+  const slotW = g.slotWidth;
+  MULTIPLIERS.forEach((mult, i) => {
+    const { hue, sat, light } = slotHsl(mult);
+    const x = slotCenterX(i, g) - slotW / 2;
+    const y = g.slotTopY;
+    ctx.fillStyle = `hsla(${hue}, ${sat}%, ${light}%, 0.2)`;
+    ctx.fillRect(x, y, slotW, g.slotHeight);
+    ctx.strokeStyle = `hsla(${hue}, ${sat}%, ${light}%, 0.6)`;
+    ctx.strokeRect(x, y, slotW, g.slotHeight);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${mult}x`, slotCenterX(i, g), y + 22);
+  });
+
+  // --- landing flashes --------------------------------------------------------
+  const events = landEventsRef.current;
+  if (events.length > 0) {
+    landEventsRef.current = events.filter((e) => now - e.at < FLASH_MS);
+    for (const event of landEventsRef.current) {
+      const { hue } = slotHsl(event.multiplier);
+      const age = (now - event.at) / FLASH_MS;
+      const alpha = 1 - age;
+      const x = slotCenterX(event.slotIndex, g) - slotW / 2;
+      ctx.fillStyle = `hsla(${hue}, 100%, 60%, ${alpha * 0.35})`;
+      ctx.fillRect(x, g.slotTopY, slotW, g.slotHeight);
+      ctx.strokeStyle = `hsla(${hue}, 100%, 65%, ${alpha})`;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x, g.slotTopY, slotW, g.slotHeight);
+      ctx.lineWidth = 1;
+    }
+  }
+
+  // --- balls ------------------------------------------------------------------
+  for (const ball of ballsRef.current) {
+    const elapsed = now - ball.startTime;
+    const pos = sampleBallPath(ball.anim, elapsed);
+
+    // tiny cosmetic wobble so simultaneous balls never look identical
+    let phase = 0;
+    for (let i = 0; i < ball.id.length; i++) phase = (phase + ball.id.charCodeAt(i) * (i + 1)) % 628;
+    const wobble = pos.done ? 0 : Math.sin(elapsed / 70 + phase) * 1.3;
+    const x = pos.x + wobble;
+    const y = pos.y;
+
+    const gradient = ctx.createRadialGradient(x - 3, y - 3, 1, x, y, BALL_RADIUS);
+    gradient.addColorStop(0, '#ffffff');
+    gradient.addColorStop(0.3, ball.color);
+    gradient.addColorStop(1, ball.color);
+
+    ctx.beginPath();
+    ctx.arc(x, y, BALL_RADIUS, 0, Math.PI * 2);
+    ctx.fillStyle = gradient;
+    ctx.shadowColor = ball.color;
+    ctx.shadowBlur = 15;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    ctx.beginPath();
+    ctx.arc(x - 2, y - 2, BALL_RADIUS * 0.4, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.fill();
+  }
+}
 
 export default function Plinko() {
-  const { balance, addBalance, deductBalance } = useGameCurrency();
+  const { username, balance } = useGameCurrency();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [balls, setBalls] = useState<Ball[]>([]);
-  const [lastWin, setLastWin] = useState<number | null>(null);
-  const [totalDrops, setTotalDrops] = useState(0);
-  const [showLowCredits, setShowLowCredits] = useState(false);
-  const animFrameRef = useRef<number>(0);
-  const ballsRef = useRef<Ball[]>([]);
-  const creditsRef = useRef(balance);
-
-  useEffect(() => {
-    creditsRef.current = balance;
-  }, [balance]);
-
+  const geometryRef = useRef<BoardGeometry>(buildGeometry(520, 520));
   const [canvasSize, setCanvasSize] = useState({ width: 520, height: 520 });
-  
+
+  const {
+    ballsRef,
+    landEventsRef,
+    lastWin,
+    totalDrops,
+    recentRounds,
+    outOfCredits,
+    error,
+    isSyncing,
+    canDrop,
+    drop,
+    reset,
+    resyncGeometry,
+    clearError,
+  } = usePlinkoGame({ username, geometryRef });
+
+  // Responsive canvas size (same behaviour as the old physics version).
   useEffect(() => {
     const updateSize = () => {
       const width = Math.min(520, window.innerWidth - 40);
       const height = Math.min(520, window.innerHeight - 200);
       setCanvasSize({ width: Math.max(320, width), height: Math.max(400, height) });
     };
-    
     updateSize();
     window.addEventListener('resize', updateSize);
     return () => window.removeEventListener('resize', updateSize);
   }, []);
 
-  const canvasWidth = canvasSize.width;
-  const canvasHeight = canvasSize.height;
-  const horizontalPadding = Math.max(40, canvasWidth * 0.1);
-  const pyramidWidth = canvasWidth - 2 * horizontalPadding;
-  const maxPegsInRow = 11;
-  const pegSpacingX = pyramidWidth / (maxPegsInRow - 1);
-  const pegSpacingY = (canvasHeight - 130) / DISPLAY_ROWS;
-
-  const slotGap = 6;
-  const totalGaps = slotGap * (MULTIPLIERS.length - 1);
-  const slotStackWidth = pyramidWidth + 40;
-  const slotStackStartX = (canvasWidth - slotStackWidth) / 2;
-
-  const getSlotPositions = useCallback(() => {
-    const availableWidth = slotStackWidth - totalGaps;
-    const unitWidth = availableWidth / TOTAL_WEIGHT;
-    const positions: { x: number; width: number; centerX: number }[] = [];
-    let currentX = slotStackStartX;
-    for (let i = 0; i < MULTIPLIERS.length; i++) {
-      const w = unitWidth * SLOT_WEIGHTS[i];
-      positions.push({
-        x: currentX,
-        width: w,
-        centerX: currentX + w / 2,
-      });
-      currentX += w + slotGap;
-    }
-    return positions;
-  }, []);
-
-  const getPegs = useCallback(() => {
-    const pegs: { x: number; y: number }[] = [];
-    for (let row = 0; row < DISPLAY_ROWS; row++) {
-      const pegsInRow = row + 2;
-      const rowWidth = (pegsInRow - 1) * pegSpacingX;
-      const startX = horizontalPadding + (pyramidWidth - rowWidth) / 2;
-      for (let col = 0; col < pegsInRow; col++) {
-        pegs.push({
-          x: startX + col * pegSpacingX,
-          y: 50 + row * pegSpacingY,
-        });
-      }
-    }
-    return pegs;
-  }, [pegSpacingX, pegSpacingY, pyramidWidth]);
-
-  const dropBall = useCallback(() => {
-    if (creditsRef.current < DROP_COST) return;
-
-    deductBalance(DROP_COST);
-    setTotalDrops(prev => prev + 1);
-
-    const colors = [
-      '#ff3b3b', '#ff6b00', '#ffd000', '#ff2d95', '#b14bff',
-      '#ff5e7d', '#ff9500', '#e0ff00', '#ff00aa', '#ff4444',
-    ];
-
-    const u1 = Math.random();
-    const u2 = Math.random();
-    const normalRandom = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
-    
-    const newBall: Ball = {
-      id: Date.now() + Math.random(),
-      x: canvasWidth / 2 + normalRandom * 3,
-      y: 25,
-      vx: normalRandom * 0.3,
-      vy: 0,
-      color: colors[Math.floor(Math.random() * colors.length)],
-    };
-    ballsRef.current = [...ballsRef.current, newBall];
-    setBalls([...ballsRef.current]);
-  }, []);
-
+  // Canvas setup + render loop. Re-runs only on resize; every frame reads refs,
+  // so animation causes zero React re-renders.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const pegs = getPegs();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = canvasSize.width * dpr;
+    canvas.height = canvasSize.height * dpr;
+    canvas.style.width = `${canvasSize.width}px`;
+    canvas.style.height = `${canvasSize.height}px`;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    const animate = () => {
-      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+    const geometry = buildGeometry(canvasSize.width, canvasSize.height);
+    geometryRef.current = geometry;
+    resyncGeometry();
 
-      pegs.forEach((peg) => {
-        ctx.beginPath();
-        ctx.arc(peg.x, peg.y, PEG_RADIUS, 0, Math.PI * 2);
-        ctx.fillStyle = '#00e5ff';
-        ctx.shadowColor = '#00e5ff';
-        ctx.shadowBlur = 5;
-        ctx.fill();
-        ctx.shadowBlur = 0;
-      });
-
-      const slotPositions = getSlotPositions();
-      MULTIPLIERS.forEach((mult, i) => {
-        const slot = slotPositions[i];
-        const y = canvasHeight - 40;
-        let hue, saturation, lightness;
-        if (mult >= 5) {
-          hue = 45; saturation = 100; lightness = 55;
-        } else if (mult >= 1.5) {
-          hue = 140; saturation = 80; lightness = 50;
-        } else if (mult >= 1) {
-          hue = 160; saturation = 70; lightness = 50;
-        } else if (mult >= 0.5) {
-          hue = 30; saturation = 80; lightness = 50;
-        } else {
-          hue = 0; saturation = 80; lightness = 50;
-        }
-        const gap = 3;
-        ctx.fillStyle = `hsla(${hue}, ${saturation}%, ${lightness}%, 0.2)`;
-        ctx.fillRect(slot.x + gap, y, slot.width - gap * 2, 35);
-        ctx.strokeStyle = `hsla(${hue}, ${saturation}%, ${lightness}%, 0.6)`;
-        ctx.strokeRect(slot.x + gap, y, slot.width - gap * 2, 35);
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 13px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(`${mult}x`, slot.centerX, y + 22);
-      });
-
-      ballsRef.current = ballsRef.current.filter((ball) => {
-        ball.vy += GRAVITY;
-        ball.vx *= FRICTION;
-        ball.x += ball.vx;
-        ball.y += ball.vy;
-
-        if (ball.x < BALL_RADIUS) {
-          ball.x = BALL_RADIUS;
-          ball.vx = -ball.vx * BOUNCE;
-        }
-        if (ball.x > canvasWidth - BALL_RADIUS) {
-          ball.x = canvasWidth - BALL_RADIUS;
-          ball.vx = -ball.vx * BOUNCE;
-        }
-
-        pegs.forEach((peg) => {
-          const dx = ball.x - peg.x;
-          const dy = ball.y - peg.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < BALL_RADIUS + PEG_RADIUS) {
-            const angle = Math.atan2(dy, dx);
-            ball.x = peg.x + (BALL_RADIUS + PEG_RADIUS) * Math.cos(angle);
-            ball.y = peg.y + (BALL_RADIUS + PEG_RADIUS) * Math.sin(angle);
-            ball.vx = Math.cos(angle) * 1.5 + (Math.random() - 0.5) * 0.4;
-            ball.vy = Math.abs(ball.vy) * BOUNCE * 0.6;
-          }
-        });
-
-        if (ball.y > canvasHeight - 45) {
-          const slotPositions = getSlotPositions();
-          let slotIndex = 0;
-          for (let i = 0; i < slotPositions.length; i++) {
-            if (ball.x >= slotPositions[i].x && ball.x < slotPositions[i].x + slotPositions[i].width) {
-              slotIndex = i;
-              break;
-            }
-            if (i === slotPositions.length - 1) slotIndex = i;
-          }
-          const mult = MULTIPLIERS[slotIndex];
-
-          addBalance(mult);
-          setLastWin(mult);
-          return false;
-        }
-
-        const gradient = ctx.createRadialGradient(
-          ball.x - 3, ball.y - 3, 1,
-          ball.x, ball.y, BALL_RADIUS
-        );
-        gradient.addColorStop(0, '#ffffff');
-        gradient.addColorStop(0.3, ball.color);
-        gradient.addColorStop(1, ball.color);
-
-        ctx.beginPath();
-        ctx.arc(ball.x, ball.y, BALL_RADIUS, 0, Math.PI * 2);
-        ctx.fillStyle = gradient;
-        ctx.shadowColor = ball.color;
-        ctx.shadowBlur = 15;
-        ctx.fill();
-        ctx.shadowBlur = 0;
-
-        ctx.beginPath();
-        ctx.arc(ball.x - 2, ball.y - 2, BALL_RADIUS * 0.4, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-        ctx.fill();
-
-        return true;
-      });
-
-      setBalls([...ballsRef.current]);
-      animFrameRef.current = requestAnimationFrame(animate);
+    let raf = 0;
+    const render = () => {
+      drawFrame(ctx, geometry, { ballsRef, landEventsRef }, Date.now());
+      raf = requestAnimationFrame(render);
     };
+    raf = requestAnimationFrame(render);
+    return () => cancelAnimationFrame(raf);
+  }, [canvasSize, ballsRef, landEventsRef, geometryRef, resyncGeometry]);
 
-    animate();
-    return () => cancelAnimationFrame(animFrameRef.current);
-  }, [getPegs, getSlotPositions, pyramidWidth]);
-
+  // Auto-dismiss transient errors.
   useEffect(() => {
-    if (balance > 0 && balance < 10) {
-      setShowLowCredits(true);
-      const timer = setTimeout(() => setShowLowCredits(false), 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [balance]);
+    if (!error) return;
+    const timer = setTimeout(clearError, 3000);
+    return () => clearTimeout(timer);
+  }, [error, clearError]);
 
-  const resetGame = () => {
-    setLastWin(null);
-    setTotalDrops(0);
-    ballsRef.current = [];
-    setBalls([]);
-  };
-
-  const canDrop = balance >= DROP_COST;
-  const profit = balance - 100;
+  const profit = balance - STARTING_BALANCE;
+  const lastWinColor =
+    lastWin === null
+      ? 'text-gray-600'
+      : lastWin >= 5
+        ? 'text-yellow-400'
+        : lastWin >= 1.5
+          ? 'text-green-400'
+          : lastWin >= 1
+            ? 'text-teal-400'
+            : lastWin >= 0.5
+              ? 'text-orange-400'
+              : 'text-red-400';
 
   return (
     <div className="min-h-screen flex items-center justify-center px-2 sm:px-4 py-4 sm:py-8">
       <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 max-w-5xl w-full">
+        {/* ------------------------------ sidebar ------------------------------ */}
         <div className="lg:w-80 w-full space-y-3 sm:space-y-4 order-2 lg:order-1">
           <div className="p-3 sm:p-4 rounded-xl bg-dark-card/90 backdrop-blur-sm border border-green-500/30 neon-glow">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider">Balance</p>
-                <p className={`text-2xl sm:text-3xl font-black font-mono ${
-                  balance < 10 ? 'text-red-400' : balance < 30 ? 'text-yellow-400' : 'text-green-400'
-                } ${showLowCredits ? 'animate-pulse-neon' : ''}`}>
+                <p
+                  className={`text-2xl sm:text-3xl font-black font-mono ${
+                    balance < 10 ? 'text-red-400' : balance < 30 ? 'text-yellow-400' : 'text-green-400'
+                  }`}
+                >
                   ${balance.toFixed(2)}
                 </p>
               </div>
               <div className="text-right">
                 <p className="text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider">Profit</p>
-                <p className={`text-lg sm:text-xl font-bold font-mono ${
-                  profit > 0 ? 'text-green-400' : profit < 0 ? 'text-red-400' : 'text-gray-400'
-                }`}>
-                  {profit > 0 ? '+' : ''}{profit.toFixed(2)}
+                <p
+                  className={`text-lg sm:text-xl font-bold font-mono ${
+                    profit > 0 ? 'text-green-400' : profit < 0 ? 'text-red-400' : 'text-gray-400'
+                  }`}
+                >
+                  {profit > 0 ? '+' : ''}
+                  {profit.toFixed(2)}
                 </p>
               </div>
             </div>
+            <p className="mt-2 text-[10px] text-gray-500 uppercase tracking-wider">
+              Server wallet {isSyncing ? '• syncing…' : '• synced'}
+            </p>
           </div>
 
           <div className="grid grid-cols-3 gap-2 sm:gap-3">
@@ -303,23 +249,45 @@ export default function Plinko() {
             </div>
             <div className="bg-dark-card/90 rounded-lg p-2 sm:p-3 text-center border border-green-500/10">
               <p className="text-gray-500 text-[10px] sm:text-xs">Cost</p>
-              <p className="text-cyan-400 font-bold text-base sm:text-lg">{DROP_COST}</p>
+              <p className="text-cyan-400 font-bold text-base sm:text-lg">{DROP_BET}</p>
             </div>
             <div className="bg-dark-card/90 rounded-lg p-2 sm:p-3 text-center border border-green-500/10">
               <p className="text-gray-500 text-[10px] sm:text-xs">Last Win</p>
-              <p className={`font-bold text-base sm:text-lg ${
-                lastWin !== null
-                  ? lastWin >= 5 ? 'text-yellow-400' : lastWin >= 1.5 ? 'text-green-400' : lastWin >= 1 ? 'text-teal-400' : lastWin >= 0.5 ? 'text-orange-400' : 'text-red-400'
-                  : 'text-gray-600'
-              }`}>
+              <p className={`font-bold text-base sm:text-lg ${lastWinColor}`}>
                 {lastWin !== null ? `+${lastWin}` : '—'}
               </p>
             </div>
           </div>
 
+          {recentRounds.length > 0 && (
+            <div className="bg-dark-card/90 rounded-lg p-3 border border-green-500/10">
+              <p className="text-gray-500 text-[10px] uppercase tracking-wider mb-2">
+                Recent rounds (server ledger)
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {recentRounds.map((round) => {
+                  const { hue, sat, light } = slotHsl(round.multiplier);
+                  return (
+                    <span
+                      key={round.id}
+                      className="px-2 py-0.5 rounded text-[11px] font-bold font-mono"
+                      style={{
+                        color: `hsl(${hue}, ${sat}%, ${light}%)`,
+                        background: `hsla(${hue}, ${sat}%, ${light}%, 0.12)`,
+                        border: `1px solid hsla(${hue}, ${sat}%, ${light}%, 0.4)`,
+                      }}
+                    >
+                      {round.multiplier}x
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2 sm:space-y-3">
             <button
-              onClick={dropBall}
+              onClick={() => void drop()}
               disabled={!canDrop}
               className={`w-full font-bold py-2.5 sm:py-3 px-4 sm:px-6 rounded-xl transition-all flex items-center justify-center gap-2 text-sm sm:text-base ${
                 canDrop
@@ -330,17 +298,17 @@ export default function Plinko() {
               {canDrop ? (
                 <>
                   <TargetIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span>Drop Ball (-{DROP_COST})</span>
+                  <span>Drop Ball (-{DROP_BET})</span>
                 </>
               ) : (
                 <>
                   <NoCreditsIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span>No Credits</span>
+                  <span>{isSyncing ? 'Syncing…' : 'No Credits'}</span>
                 </>
               )}
             </button>
             <button
-              onClick={resetGame}
+              onClick={() => void reset()}
               className="w-full bg-dark-card/90 border border-green-500/30 text-green-400 font-semibold py-2.5 sm:py-3 rounded-xl hover:bg-green-500/10 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
             >
               <ResetIcon className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -348,7 +316,14 @@ export default function Plinko() {
             </button>
           </div>
 
-          {!canDrop && (
+          {error && (
+            <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center justify-center gap-2">
+              <WarningIcon className="w-4 h-4 text-red-400" />
+              <p className="text-red-400 text-sm font-semibold">{error}</p>
+            </div>
+          )}
+
+          {outOfCredits && !error && (
             <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center justify-center gap-2">
               <WarningIcon className="w-4 h-4 text-red-400" />
               <p className="text-red-400 text-sm font-semibold">Out of credits! Reset to play again.</p>
@@ -363,14 +338,16 @@ export default function Plinko() {
           )}
         </div>
 
-        <div className="flex-1 flex items-center justify-center order-1 lg:order-2">
+        {/* ------------------------------ board ------------------------------ */}
+        <div className="flex-1 flex flex-col items-center justify-center order-1 lg:order-2 gap-2">
           <canvas
             ref={canvasRef}
-            width={canvasWidth}
-            height={canvasHeight}
             className="rounded-xl border border-green-500/20 bg-black max-w-full"
             style={{ maxWidth: '100%', height: 'auto' }}
           />
+          <p className="text-[11px] text-gray-500 text-center">
+            Outcome is decided by the server (weighted CSPRNG) — the client only replays the returned path.
+          </p>
         </div>
       </div>
     </div>

@@ -1,10 +1,12 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, type Dispatch, type SetStateAction, ReactNode } from 'react';
 
 interface GameCurrencyContextType {
   balance: number;
   username: string;
   addBalance: (amount: number) => void;
   deductBalance: (amount: number) => boolean;
+  /** Direct balance write — used by Plinko to mirror the server-authoritative wallet. */
+  setBalance: Dispatch<SetStateAction<number>>;
   setUsername: (name: string) => void;
 }
 
@@ -27,7 +29,7 @@ export function GameCurrencyProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <GameCurrencyContext.Provider value={{ balance, username, addBalance, deductBalance, setUsername }}>
+    <GameCurrencyContext.Provider value={{ balance, username, addBalance, deductBalance, setBalance, setUsername }}>
       {children}
     </GameCurrencyContext.Provider>
   );
