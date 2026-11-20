@@ -69,7 +69,7 @@ export default function Home() {
   
   return (
     <div className="min-h-screen flex flex-col bg-black/70 ">
-      <header className="flex-1 flex flex-col items-center justify-center px-3 sm:px-4 py-8 sm:py-16">
+      <header className="flex-1 flex flex-col items-center justify-center px-3 sm:px-4 py-2 sm:py-6">
         {/* Top Bar - Welcome & Balance */}
         <div className="w-full max-w-6xl mb-6 sm:mb-8 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -117,7 +117,7 @@ export default function Home() {
         </div>
         {/* Title Section */}
         <div className="text-center mb-8 sm:mb-12">
-          <h1 className="text-4xl sm:text-5xl md:text-7xl font-black text-white mb-3 sm:mb-4 animate-float">
+          <h1 className="text-4xl sm:text-5xl md:text-7xl font-black text-white mb-3 sm:mb-4 animate-float flex gap-4">
             <span className="neon-text">Neon</span>
             <span className="neon-text-cyan">Arcade</span>
           </h1>
@@ -164,7 +164,7 @@ export default function Home() {
                     </span>
                   </div>
                 </div>
-                <h3 className="text-lg sm:text-xl font-bold text-white mb-1 sm:mb-2 group-hover:text-green-400 transition-colors">
+                <h3 className="text-lg sm:text-xl font-bold text-white group-hover:text-green-400 transition-colors">
                   {game.title}
                 </h3>
                 <p className="text-gray-500 text-xs sm:text-sm leading-relaxed">
@@ -187,7 +187,7 @@ export default function Home() {
       <footer className="border-t border-green-500/10 py-6 text-center">
         <p className="text-gray-600 text-sm flex items-center justify-center gap-1.5">
           <GamepadIcon className="w-4 h-4" />
-          NeonArcade — Built with React & Tailwind CSS
+          Neon Arcade — Built with React & Tailwind CSS
         </p>
       </footer>
     </div>

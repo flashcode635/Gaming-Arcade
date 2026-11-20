@@ -171,7 +171,7 @@ export default function Minesweeper() {
       <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 max-w-5xl w-full">
         <div className="lg:w-80 w-full space-y-3 sm:space-y-4 order-2 lg:order-1">
           {/* Balance */}
-          <div className="p-3 sm:p-4 rounded-xl bg-dark-card/90 backdrop-blur-sm border border-green-500/30 neon-glow">
+          {/* <div className="p-3 sm:p-4 rounded-xl bg-dark-card/90 backdrop-blur-sm border border-green-500/30 neon-glow">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider">Balance</p>
@@ -192,7 +192,7 @@ export default function Minesweeper() {
                 </div>
               )}
             </div>
-          </div>
+          </div> */}
 
           {/* Stats */}
           <div className="grid grid-cols-2 gap-2 sm:gap-3">
@@ -209,6 +209,19 @@ export default function Minesweeper() {
           {/* Bet Settings (only before game starts) */}
           {!gameStarted && (
             <div className="bg-dark-card/90 rounded-xl p-3 sm:p-4 border border-green-500/20 space-y-4">
+                {/* Info Box */}
+              <div className="bg-green-500/5 rounded-lg p-3 border border-green-500/20">
+                <p className="text-green-400 text-xs sm:text-sm font-semibold mb-1">
+                  💎 Each gem = ${(betAmount / 5).toFixed(2)}
+                </p>
+                <p className="text-gray-400 text-[10px] sm:text-xs">
+                  Find all {TOTAL_GEMS} gems to win ${((TOTAL_GEMS * betAmount) / 5).toFixed(2)}!
+                </p>
+                <p className="text-gray-500 text-[10px] mt-1">
+                  Hit a mine = lose your ${betAmount} bet
+                </p>
+              </div>
+
               {/* Mode Selector */}
               <div>
                 <p className="text-gray-400 text-xs sm:text-sm mb-2">Game Mode:</p>
@@ -261,7 +274,7 @@ export default function Minesweeper() {
               </div>
 
               {/* Quick Bet Buttons */}
-              <div>
+              {/* <div>
                 <p className="text-gray-500 text-[10px] sm:text-xs mb-2">Quick Select:</p>
                 <div className="grid grid-cols-4 gap-2">
                   {[1, Math.ceil(maxBet / 4), Math.ceil(maxBet / 2), maxBet].map((val, idx) => (
@@ -278,20 +291,9 @@ export default function Minesweeper() {
                     </button>
                   ))}
                 </div>
-              </div>
+              </div> */}
 
-              {/* Info Box */}
-              <div className="bg-green-500/5 rounded-lg p-3 border border-green-500/20">
-                <p className="text-green-400 text-xs sm:text-sm font-semibold mb-1">
-                  💎 Each gem = ${(betAmount / 5).toFixed(2)}
-                </p>
-                <p className="text-gray-400 text-[10px] sm:text-xs">
-                  Find all {TOTAL_GEMS} gems to win ${((TOTAL_GEMS * betAmount) / 5).toFixed(2)}!
-                </p>
-                <p className="text-gray-500 text-[10px] mt-1">
-                  Hit a mine = lose your ${betAmount} bet
-                </p>
-              </div>
+            
             </div>
           )}
 
@@ -318,13 +320,13 @@ export default function Minesweeper() {
               </button>
             ) : null}
             
-            <button
+            {/* <button
               onClick={resetGame}
               className="w-full bg-dark-card/90 border border-green-500/30 text-green-400 font-semibold py-2.5 sm:py-3 rounded-xl hover:bg-green-500/10 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
             >
               <ResetIcon className="w-4 h-4 sm:w-5 sm:h-5" />
               <span>New Game</span>
-            </button>
+            </button> */}
           </div>
 
           {/* Game Result */}
@@ -352,9 +354,9 @@ export default function Minesweeper() {
 
         {/* Game Grid */}
         <div className="flex-1 flex items-center justify-center order-1 lg:order-2">
-          <div className="bg-dark-card/90 backdrop-blur-sm border border-green-500/20 rounded-2xl p-4 sm:p-6">
+          <div className="bg-dark-card/48 backdrop-blur-sm border border-green-500/20 rounded-2xl p-4 sm:p-6 sm:px-12">
             {!gameStarted ? (
-              <div className="text-center py-8 sm:py-12">
+              <div className="text-center py-8 sm:py-5">
                 <MinesweeperIcon className="w-16 h-16 sm:w-20 sm:h-20 text-green-400 mx-auto mb-4" />
                 <h3 className="text-white text-xl sm:text-2xl font-bold mb-2">Minesweeper</h3>
                 <p className="text-gray-400 text-sm sm:text-base mb-4">
@@ -363,12 +365,12 @@ export default function Minesweeper() {
                 <div className="text-gray-500 text-xs sm:text-sm space-y-1">
                   <p>Grid: {GRID_SIZE}×{GRID_SIZE} ({TOTAL_CELLS} cells)</p>
                   <p>Mines: {TOTAL_MINES} | Gems: {TOTAL_GEMS}</p>
-                  <p className="text-green-400 mt-2">
+                  {/* <p className="text-green-400 mt-2">
                     Each gem = Bet ÷ 5
-                  </p>
-                  <p className="text-gray-400 text-[10px] mt-1">
+                  </p> */}
+                  {/* <p className="text-gray-400 text-[10px] mt-1">
                     {mode === 'basic' ? 'Basic: Max bet $8' : 'Advanced: Max bet $20'}
-                  </p>
+                  </p> */}
                 </div>
               </div>
             ) : (

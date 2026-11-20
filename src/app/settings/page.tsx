@@ -206,7 +206,7 @@ export default function SettingsPage() {
 
       {/* Footer */}
       <footer className="border-t border-green-500/10 py-6 text-center text-xs text-gray-500">
-        NeonArcade System Configuration • Settings automatically persist across sessions
+        Neon Arcade System Configuration • Settings automatically persist across sessions
       </footer>
     </div>
   );
