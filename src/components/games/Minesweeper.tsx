@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { ResetIcon } from '@/assets/svg/Icons';
 import { MinesweeperIcon } from '@/assets/svg/GameIcons';
 import { useGameCurrency } from '@/context/GameCurrencyContext';
+import { BetAmountSlider } from '../ui/betAmtSlider';
+import LightBulb from '@/assets/svg/bulb';
 
 type CellState = 'hidden' | 'revealed';
 type CellContent = 'gem' | 'mine';
@@ -32,7 +34,7 @@ export default function Minesweeper() {
   const [gameResult, setGameResult] = useState<'win' | 'lose' | null>(null);
 
   const maxBet = mode === 'basic' ? 8 : 20;
-  const rewardPerGem = betAmount / 5;
+  // const rewardPerGem = betAmount / 5;
 
   const initializeGrid = () => {
     const newGrid: Cell[][] = Array(GRID_SIZE).fill(null).map(() =>
@@ -167,7 +169,7 @@ export default function Minesweeper() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-2 sm:px-4 py-4 sm:py-8">
+    <div className="h-fit flex items-start justify-center px-2 sm:px-4 py-4 sm:py-8">
       <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 max-w-5xl w-full">
         <div className="lg:w-80 w-full space-y-3 sm:space-y-4 order-2 lg:order-1">
           {/* Balance */}
@@ -208,39 +210,57 @@ export default function Minesweeper() {
 
           {/* Bet Settings (only before game starts) */}
           {!gameStarted && (
-            <div className="bg-dark-card/90 rounded-xl p-3 sm:p-4 border border-green-500/20 space-y-4">
-                {/* Info Box */}
-              <div className="bg-green-500/5 rounded-lg p-3 border border-green-500/20">
-                <p className="text-green-400 text-xs sm:text-sm font-semibold mb-1">
-                  💎 Each gem = ${(betAmount / 5).toFixed(2)}
-                </p>
-                <p className="text-gray-400 text-[10px] sm:text-xs">
-                  Find all {TOTAL_GEMS} gems to win ${((TOTAL_GEMS * betAmount) / 5).toFixed(2)}!
-                </p>
-                <p className="text-gray-500 text-[10px] mt-1">
-                  Hit a mine = lose your ${betAmount} bet
-                </p>
+            <div className="relative bg-dark-card/90 rounded-xl p-3 sm:p-4 xl:p-6 border border-green-500/20 space-y-3 sm:space-y-4 xl:space-y-6">
+              {/* Top-Right Hint Option */}
+              <div
+                className="group absolute top-0.5 right-1.5 sm:right-2.5 z-20 inline-flex items-center justify-center p-1.5 rounded-lg text-gray-400 hover:text-green-400 focus-within:text-green-400 cursor-pointer touch-manipulation transition-colors"
+                tabIndex={0}
+                role="button"
+                aria-label="Game payout info"
+                aria-describedby="minesweeper-info"
+              >
+                <LightBulb size={18} className="sm:w-5 sm:h-5" />
+
+                <div
+                  id="minesweeper-info"
+                  role="tooltip"
+                  className="absolute right-0 top-[calc(100%+6px)] z-30 w-40 sm:w-48 rounded-lg border border-green-500/30 bg-dark-card/95 backdrop-blur-md p-2 sm:p-2.5 shadow-xl opacity-0 invisible pointer-events-none scale-95 origin-top-right transition-all duration-200 group-hover:opacity-100 group-hover:visible group-hover:pointer-events-auto group-hover:scale-100 group-focus-within:opacity-100 group-focus-within:visible group-focus-within:pointer-events-auto group-focus-within:scale-100"
+                >
+                  <p className="text-green-400 text-xs sm:text-[13px] font-semibold leading-tight tabular-nums">
+                    💎 Each gem = ${(betAmount / 5).toFixed(2)}
+                  </p>
+                  <p className="mt-1 text-gray-400 text-[11px] sm:text-[12px] leading-snug tabular-nums">
+                    Win up to ${((TOTAL_GEMS * betAmount) / 5).toFixed(2)}
+                  </p>
+                </div>
               </div>
 
               {/* Mode Selector */}
               <div>
-                <p className="text-gray-400 text-xs sm:text-sm mb-2">Game Mode:</p>
-                <div className="grid grid-cols-2 gap-2">
+                <p className="text-gray-400 text-xs sm:text-sm mb-1.5 sm:mb-2 pr-8">
+                  Game Mode:
+                </p>
+                <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
                   <button
-                    onClick={() => { setMode('basic'); setBetAmount(Math.min(betAmount, 8)); }}
-                    className={`py-2 rounded-lg font-bold text-sm transition-all ${
+                    type="button"
+                    onClick={() => {
+                      setMode('basic');
+                      setBetAmount(Math.min(betAmount, 8));
+                    }}
+                    className={`py-2 sm:py-2.5 px-3 rounded-lg font-bold text-xs sm:text-sm transition-all active:scale-[0.98] touch-manipulation ${
                       mode === 'basic'
-                        ? 'bg-green-500 text-black'
+                        ? 'bg-green-500 text-black shadow-sm shadow-green-500/20'
                         : 'bg-dark-surface text-gray-400 border border-green-500/20 hover:border-green-500/40'
                     }`}
                   >
                     Basic
                   </button>
                   <button
+                    type="button"
                     onClick={() => setMode('advanced')}
-                    className={`py-2 rounded-lg font-bold text-sm transition-all ${
+                    className={`py-2 sm:py-2.5 px-3 rounded-lg font-bold text-xs sm:text-sm transition-all active:scale-[0.98] touch-manipulation ${
                       mode === 'advanced'
-                        ? 'bg-cyan-500 text-black'
+                        ? 'bg-cyan-500 text-black shadow-sm shadow-cyan-500/20'
                         : 'bg-dark-surface text-gray-400 border border-cyan-500/20 hover:border-cyan-500/40'
                     }`}
                   >
@@ -250,50 +270,11 @@ export default function Minesweeper() {
               </div>
 
               {/* Bet Amount Slider */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-gray-400 text-xs sm:text-sm">Bet Amount:</p>
-                  <p className="text-green-400 font-bold text-lg sm:text-xl">${betAmount}</p>
-                </div>
-                <input
-                  type="range"
-                  min="1"
-                  max={maxBet}
-                  step="1"
-                  value={betAmount}
-                  onChange={(e) => setBetAmount(Number(e.target.value))}
-                  className="w-full h-2 bg-dark-surface rounded-lg appearance-none cursor-pointer accent-green-500"
-                  style={{
-                    background: `linear-gradient(to right, #00ff88 0%, #00ff88 ${(betAmount / maxBet) * 100}%, #0d1a0d ${(betAmount / maxBet) * 100}%, #0d1a0d 100%)`
-                  }}
-                />
-                <div className="flex justify-between mt-1">
-                  <span className="text-gray-500 text-[10px]">$1</span>
-                  <span className="text-gray-500 text-[10px]">${maxBet}</span>
-                </div>
-              </div>
-
-              {/* Quick Bet Buttons */}
-              {/* <div>
-                <p className="text-gray-500 text-[10px] sm:text-xs mb-2">Quick Select:</p>
-                <div className="grid grid-cols-4 gap-2">
-                  {[1, Math.ceil(maxBet / 4), Math.ceil(maxBet / 2), maxBet].map((val, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setBetAmount(val)}
-                      className={`py-2 rounded-lg font-bold text-sm transition-all ${
-                        betAmount === val
-                          ? 'bg-green-500 text-black'
-                          : 'bg-dark-surface text-gray-400 border border-green-500/20 hover:border-green-500/40'
-                      }`}
-                    >
-                      ${val}
-                    </button>
-                  ))}
-                </div>
-              </div> */}
-
-            
+              <BetAmountSlider
+                setBetAmount={setBetAmount}
+                maxBet={maxBet}
+                betAmount={betAmount}
+              />
             </div>
           )}
 
