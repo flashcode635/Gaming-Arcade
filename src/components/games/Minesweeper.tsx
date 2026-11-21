@@ -274,6 +274,7 @@ export default function Minesweeper() {
                 setBetAmount={setBetAmount}
                 maxBet={maxBet}
                 betAmount={betAmount}
+                accent={mode === 'advanced' ? 'cyan' : 'green'}
               />
             </div>
           )}
@@ -293,21 +294,34 @@ export default function Minesweeper() {
                 Start Game (-${betAmount})
               </button>
             ) : !gameOver ? (
-              <button
-                onClick={cashOut}
-                className="w-full font-bold py-2.5 sm:py-3 px-4 sm:px-6 rounded-xl transition-all flex items-center justify-center gap-2 text-sm sm:text-base bg-linear-to-r from-yellow-500 to-orange-500 text-black hover:opacity-90 neon-glow cursor-pointer"
-              >
-                Cash Out (${winnings.toFixed(2)})
-              </button>
+              <div className="space-y-2 sm:space-y-3">
+                <button
+                  onClick={cashOut}
+                  className="w-full font-bold py-2.5 sm:py-3 px-4 sm:px-6 rounded-xl transition-all flex items-center justify-center gap-2 text-sm sm:text-base bg-linear-to-r from-yellow-500 to-orange-500 text-black hover:opacity-90 neon-glow cursor-pointer"
+                >
+                  Cash Out (${winnings.toFixed(2)})
+                </button>
+                {gemsFound > 0 && (
+                  <button
+                    onClick={resetGame}
+                    className="w-full bg-dark-card/90 border border-green-500/30 text-green-400 font-semibold py-2.5 sm:py-3 rounded-xl hover:bg-green-500/10 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
+                  >
+                    <ResetIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <span>Restart Game</span>
+                  </button>
+                )}
+              </div>
             ) : null}
-            
-            {/* <button
-              onClick={resetGame}
-              className="w-full bg-dark-card/90 border border-green-500/30 text-green-400 font-semibold py-2.5 sm:py-3 rounded-xl hover:bg-green-500/10 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
-            >
-              <ResetIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span>New Game</span>
-            </button> */}
+
+            {gameStarted && gameOver && (
+              <button
+                onClick={resetGame}
+                className="w-full bg-dark-card/90 border border-green-500/30 text-green-400 font-semibold py-2.5 sm:py-3 rounded-xl hover:bg-green-500/10 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
+              >
+                <ResetIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span>Restart Game</span>
+              </button>
+            )}
           </div>
 
           {/* Game Result */}

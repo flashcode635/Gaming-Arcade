@@ -73,8 +73,11 @@ export default function Sudoku() {
   const [given, setGiven] = useState<boolean[][]>([]);
   const [selectedCell, setSelectedCell] = useState<[number, number] | null>(null);
   const [errors, setErrors] = useState<Set<string>>(new Set());
+  const [errorCount, setErrorCount] = useState(0);
   const [won, setWon] = useState(false);
   const [timeUp, setTimeUp] = useState(false);
+  const [gameOver, setGameOver] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
   const [timer, setTimer] = useState(0);
   const [timeLimit, setTimeLimit] = useState(360);
@@ -90,8 +93,11 @@ export default function Sudoku() {
     setGiven(puzzle.map(row => row.map(cell => cell !== null)));
     setSelectedCell(null);
     setErrors(new Set());
+    setErrorCount(0);
     setWon(false);
     setTimeUp(false);
+    setGameOver(false);
+    setIsPaused(false);
     setDifficulty(diff);
     setTimeLimit(timeLimits[diff]);
     setTimer(timeLimits[diff]);
@@ -104,7 +110,7 @@ export default function Sudoku() {
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
-    if (isRunning && !won && !timeUp) {
+    if (isRunning && !won && !timeUp && !gameOver && !isPaused) {
       interval = setInterval(() => {
         setTimer(t => {
           if (t <= 1) {
@@ -117,26 +123,35 @@ export default function Sudoku() {
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isRunning, won, timeUp]);
+  }, [isRunning, won, timeUp, gameOver, isPaused]);
 
   const handleCellClick = (row: number, col: number) => {
-    if (given[row]?.[col] || timeUp) return;
+    if (given[row]?.[col] || timeUp || gameOver || isPaused) return;
     setSelectedCell([row, col]);
   };
 
   const handleNumberInput = (num: number) => {
-    if (!selectedCell || won || timeUp) return;
+    if (!selectedCell || won || timeUp || gameOver || isPaused) return;
     const [row, col] = selectedCell;
     if (given[row][col]) return;
 
     const newBoard = board.map(r => [...r]);
+    if (newBoard[row][col] === num) return;
     newBoard[row][col] = num;
     setBoard(newBoard);
 
     const newErrors = new Set(errors);
     const key = `${row}-${col}`;
-    if (num !== null && num !== solution[row][col]) {
+    if (num !== solution[row][col]) {
       newErrors.add(key);
+      setErrorCount(current => {
+        const next = current + 1;
+        if (next >= 3) {
+          setGameOver(true);
+          setIsRunning(false);
+        }
+        return next;
+      });
     } else {
       newErrors.delete(key);
     }
@@ -149,10 +164,18 @@ export default function Sudoku() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape' || e.key.toLowerCase() === 'p') {
+      if (!won && !timeUp && !gameOver) {
+        setIsPaused(current => !current);
+      }
+      return;
+    }
+    if (isPaused || gameOver || won || timeUp) return;
     const num = parseInt(e.key);
     if (num >= 1 && num <= 9) {
       handleNumberInput(num);
     } else if (e.key === 'Backspace' || e.key === 'Delete') {
+      if (isPaused || gameOver) return;
       if (selectedCell) {
         const [row, col] = selectedCell;
         if (!given[row][col]) {
@@ -214,41 +237,72 @@ export default function Sudoku() {
           </div>
           <div className="text-center">
             <p className="text-gray-500 text-xs sm:text-sm">Errors</p>
-            <p className="text-lg sm:text-xl font-bold text-red-400">{errors.size}</p>
+            <p className="text-lg sm:text-xl font-bold text-red-400">{errorCount} / 3</p>
           </div>
         </div>
 
         <div className="flex justify-center mb-3 sm:mb-4">
-          <div className="grid grid-cols-9 border-2 border-green-500/40 rounded-lg overflow-hidden">
-            {board.map((row, ri) =>
-              row.map((cell, ci) => {
-                const isSelected = selectedCell?.[0] === ri && selectedCell?.[1] === ci;
-                const isGiven = given[ri]?.[ci];
-                const isError = errors.has(`${ri}-${ci}`);
-                const isBorderRight = (ci + 1) % 3 === 0 && ci < 8;
-                const isBorderBottom = (ri + 1) % 3 === 0 && ri < 8;
-                
-                const boxRow = Math.floor(ri / 3);
-                const boxCol = Math.floor(ci / 3);
-                const boxIndex = boxRow * 3 + boxCol;
-                const boxClass = boxIndex % 2 === 0 ? 'sudoku-box-light' : 'sudoku-box-dark';
+          <div className="relative">
+            <div className="grid grid-cols-9 border-2 border-green-500/40 rounded-lg overflow-hidden">
+              {board.map((row, ri) =>
+                row.map((cell, ci) => {
+                  const isSelected = selectedCell?.[0] === ri && selectedCell?.[1] === ci;
+                  const isGiven = given[ri]?.[ci];
+                  const isError = errors.has(`${ri}-${ci}`);
+                  const isBorderRight = (ci + 1) % 3 === 0 && ci < 8;
+                  const isBorderBottom = (ri + 1) % 3 === 0 && ri < 8;
+                  
+                  const boxRow = Math.floor(ri / 3);
+                  const boxCol = Math.floor(ci / 3);
+                  const boxIndex = boxRow * 3 + boxCol;
+                  const boxClass = boxIndex % 2 === 0 ? 'sudoku-box-light' : 'sudoku-box-dark';
 
-                return (
-                  <div
-                    key={`${ri}-${ci}`}
-                    onClick={() => handleCellClick(ri, ci)}
-                    className={`sudoku-cell ${boxClass}
-                      ${isSelected ? 'selected' : ''}
-                      ${isGiven ? 'given' : 'user-input'}
-                      ${isError ? 'error' : ''}
-                      ${isBorderRight ? 'sudoku-border-right' : ''}
-                      ${isBorderBottom ? 'sudoku-border-bottom' : ''}
-                    `}
+                  return (
+                    <div
+                      key={`${ri}-${ci}`}
+                      onClick={() => handleCellClick(ri, ci)}
+                      className={`sudoku-cell ${boxClass}
+                        ${isSelected ? 'selected' : ''}
+                        ${isGiven ? 'given' : 'user-input'}
+                        ${isError ? 'error' : ''}
+                        ${isBorderRight ? 'sudoku-border-right' : ''}
+                        ${isBorderBottom ? 'sudoku-border-bottom' : ''}
+                      `}
+                    >
+                      {cell || ''}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {isPaused && !gameOver && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-black/80 backdrop-blur-sm">
+                <div className="mx-4 rounded-xl border border-yellow-500/40 bg-dark-card px-6 py-5 text-center shadow-xl">
+                  <p className="text-xl font-bold text-yellow-400">Game is Paused</p>
+                  <button
+                    onClick={() => setIsPaused(false)}
+                    className="mt-3 rounded-lg bg-yellow-500 px-5 py-2 text-sm font-bold text-black hover:bg-yellow-400"
                   >
-                    {cell || ''}
-                  </div>
-                );
-              })
+                    Resume
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {gameOver && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-black/80 backdrop-blur-sm">
+                <div className="mx-4 rounded-xl border border-red-500/40 bg-dark-card px-6 py-5 text-center shadow-xl">
+                  <p className="text-xl font-bold text-red-400">Game Over</p>
+                  <p className="mt-1 text-sm text-gray-400">You reached 3 errors</p>
+                  <button
+                    onClick={() => startNewGame(difficulty)}
+                    className="mt-3 rounded-lg bg-red-500 px-5 py-2 text-sm font-bold text-black hover:bg-red-400"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -265,9 +319,19 @@ export default function Sudoku() {
           ))}
         </div>
 
-        <div className="flex gap-2 sm:gap-3">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
           <button
             onClick={() => {
+              if (!won && !timeUp && !gameOver) setIsPaused(current => !current);
+            }}
+            disabled={won || timeUp || gameOver}
+            className="flex-1 bg-dark-surface border border-yellow-500/30 text-yellow-400 font-semibold py-2.5 sm:py-3 rounded-xl hover:bg-yellow-500/10 transition-colors text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isPaused ? '▶️ Resume' : '⏸️ Pause'}
+          </button>
+          <button
+            onClick={() => {
+              if (isPaused || gameOver) return;
               if (selectedCell && !given[selectedCell[0]][selectedCell[1]]) {
                 const newBoard = board.map(r => [...r]);
                 newBoard[selectedCell[0]][selectedCell[1]] = null;

@@ -68,7 +68,7 @@ export default function Home() {
   const { isDarkMode, setIsDarkMode } = useTheme();
   
   return (
-    <div className="min-h-screen flex flex-col bg-black/70 ">
+    <div className="min-h-screen flex flex-col bg-dark-card/20 backdrop-blur-sm">
       <header className="flex-1 flex flex-col items-center justify-center px-3 sm:px-4 py-2 sm:py-6">
         {/* Top Bar - Welcome & Balance */}
         <div className="w-full max-w-6xl mb-6 sm:mb-8 flex items-center justify-between">
