@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Sudoku from "@/components/games/Sudoku";
+import Sudoku from "@/components/sudoku/Sudoku";
 
 export const metadata: Metadata = {
   title: "Sudoku",

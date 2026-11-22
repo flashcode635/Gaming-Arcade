@@ -242,11 +242,11 @@ body.light-mode .sudoku-cell.user-input {
 }
 
 body.light-mode .sudoku-box-light {
-  background: rgba(0, 128, 0, 0.04);
+  background: #e8f5e9;
 }
 
 body.light-mode .sudoku-box-dark {
-  background: rgba(0, 128, 128, 0.04);
+  background: #e8f5e9;
 }
 
 body.light-mode .sudoku-border-right {
@@ -363,6 +363,7 @@ body.light-mode ::-webkit-scrollbar-thumb {
 .sudoku-cell {
   width: 36px;
   height: 36px;
+  background: #0a0f0a;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -400,11 +401,6 @@ body.light-mode ::-webkit-scrollbar-thumb {
   text-shadow: 0 0 5px rgba(0, 255, 136, 0.5);
 }
 
-.sudoku-cell.error {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
-}
-
 .sudoku-border-right {
   border-right: 3px solid rgba(0, 255, 136, 0.6);
   box-shadow: inset -1px 0 2px rgba(0, 255, 136, 0.2);
@@ -416,11 +412,152 @@ body.light-mode ::-webkit-scrollbar-thumb {
 }
 
 .sudoku-box-light {
-  background: rgba(0, 255, 136, 0.03);
+  background: #0a0f0a;
 }
 
 .sudoku-box-dark {
-  background: rgba(0, 229, 255, 0.03);
+  background: #0a0f0a;
+}
+
+.sudoku-cell.active-area {
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.sudoku-cell.matching-digit {
+  background: rgba(16, 185, 129, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.22);
+}
+
+.sudoku-cell.selected {
+  background: rgba(0, 255, 136, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(0, 255, 136, 0.55);
+}
+
+/* Declared after .matching-digit/.selected so error styling always wins
+   the cascade when a cell is both highlighted and wrong. */
+.sudoku-cell.error {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  text-shadow: none;
+  box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.45);
+}
+
+.sudoku-notes {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  color: #7dd3fc;
+  font-size: 8px;
+  line-height: 1;
+  text-shadow: none;
+}
+
+.sudoku-notes span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.control-button {
+  min-width: 0;
+  min-height: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: 1px solid rgba(0, 255, 136, 0.25);
+  border-radius: 0.75rem;
+  background: #0d1a0d;
+  color: #00ff88;
+  font-size: 10px;
+  font-weight: 700;
+  transition: all 0.2s;
+}
+
+.control-button.active,
+.desktop-control-button.active {
+  border-color: rgba(0, 255, 136, 0.7);
+  background: rgba(0, 255, 136, 0.16);
+  color: #00ff88;
+}
+
+.control-button:disabled,
+.desktop-control-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.desktop-sudoku-grid {
+  width: min(65vh, 48vw, 620px);
+  aspect-ratio: 1;
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  border: 2px solid rgba(0, 255, 136, 0.4);
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.desktop-sudoku-grid .sudoku-cell {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  font-size: clamp(21px, 2vh, 20px);
+}
+
+.desktop-sudoku-grid .sudoku-notes {
+  font-size: clamp(8px, 1.2vh, 12px);
+}
+
+.desktop-control-button {
+  min-width: 0;
+  height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  justify-content: center;
+  gap: 3px;
+  /* border: 1px solid rgba(0, 255, 136, 0.25); */
+  border-radius: 0.75rem;
+  background: #0d1a0dc8;
+  color: #00ff88;
+  font-size: 9px;
+  font-weight: 700;
+  transition: all 0.2s;
+}
+
+@media (max-width: 767px) {
+  .control-button {
+    min-height: 52px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .control-button svg {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  .mobile-number-button {
+    font-size: 1.35rem;
+  }
+
+  .mobile-sudoku-grid {
+    width: min(calc(100vw - 32px), 520px);
+    aspect-ratio: 1;
+  }
+
+  .mobile-sudoku-grid .sudoku-cell {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+  }
 }
 
 /* Memory card flip styles */
