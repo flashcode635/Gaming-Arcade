@@ -21,7 +21,7 @@ const games = [
     title: 'Sudoku',
     icon: SudokuIcon,
     description: 'Classic number puzzle',
-    color: 'from-cyan-500 to-teal-500',
+    color: 'from-green-500 to-cyan-500',
     difficulty: 'Medium',
     costPerTurn: 1,
   },
@@ -30,7 +30,7 @@ const games = [
     title: 'Tic-Tac-Toe',
     icon: TicTacToeIcon,
     description: 'Beat the AI or play with friends',
-    color: 'from-emerald-500 to-green-500',
+    color: 'from-green-500 to-cyan-500',
     difficulty: 'Easy',
     costPerTurn: 1,
   },
@@ -39,7 +39,7 @@ const games = [
     title: 'Snake',
     icon: SnakeIcon,
     description: 'Classic snake game',
-    color: 'from-green-400 to-emerald-500',
+    color: 'from-green-500 to-cyan-500',
     difficulty: 'Medium',
     costPerTurn: 1,
   },
@@ -48,7 +48,7 @@ const games = [
     title: 'Memory Match',
     icon: MemoryIcon,
     description: 'Test your memory',
-    color: 'from-teal-500 to-cyan-500',
+    color: 'from-green-500 to-cyan-500',
     difficulty: 'Easy',
     costPerTurn: 1,
   },
@@ -57,7 +57,7 @@ const games = [
     title: 'Minesweeper',
     icon: MinesweeperIcon,
     description: 'Find gems, avoid mines',
-    color: 'from-red-500 to-orange-500',
+    color: 'from-green-500 to-cyan-500',
     difficulty: 'Hard',
     costPerTurn: 1,
   },
@@ -77,14 +77,14 @@ export default function Home() {
               {username.charAt(0).toUpperCase()}
             </div>
             <div>
-              <p className="text-gray-400 text-xs sm:text-sm">Welcome back,</p>
-              <h2 className="text-white text-lg sm:text-xl font-bold">{username}</h2>
+              <p className="font-sans font-normal text-zinc-500 text-xs sm:text-sm">Welcome back,</p>
+              <h2 className="font-display font-semibold text-white text-lg sm:text-xl">{username}</h2>
             </div>
           </div>
           <div className="flex items-center gap-3 sm:gap-4">
             <div className="text-right">
-              <p className="text-gray-400 text-xs sm:text-sm">Balance</p>
-              <p className={`text-2xl sm:text-3xl font-black font-mono ${
+              <p className="font-sans font-medium uppercase tracking-widest text-zinc-500 text-xs sm:text-sm">Balance</p>
+              <p className={`font-mono font-bold text-2xl sm:text-3xl tabular-nums drop-shadow ${
                 balance < 10 ? 'text-red-400' : balance < 30 ? 'text-yellow-400' : 'text-green-400'
               }`}>
                 ${balance.toFixed(2)}
@@ -117,23 +117,23 @@ export default function Home() {
         </div>
         {/* Title Section */}
         <div className="text-center mb-8 sm:mb-12">
-          <h1 className="text-4xl sm:text-5xl md:text-7xl font-black text-white mb-3 sm:mb-4 animate-float flex gap-4">
-            <span className="neon-text">Neon</span>
+          <h1 className="font-display font-bold text-6xl md:text-7xl uppercase tracking-widest text-white mb-3 sm:mb-4 animate-float flex gap-4">
+            <span className="neon-text">Neo</span>
             <span className="neon-text-cyan">Arcade</span>
           </h1>
-          <p className="text-gray-400 text-sm sm:text-lg md:text-xl max-w-2xl mx-auto px-2">
+          {/* <p className="font-sans font-normal text-zinc-400 tracking-wide text-sm sm:text-lg md:text-xl max-w-2xl mx-auto px-2">
             Your ultimate mini-games hub
-          </p>
+          </p> */}
           <div className="mt-3 sm:mt-4 flex items-center justify-center gap-2 sm:gap-4 flex-wrap">
-            <span className="px-2 sm:px-3 py-1 bg-green-500/10 border border-green-500/30 rounded-full text-green-400 text-xs sm:text-sm flex items-center gap-1 sm:gap-1.5">
+            <span className="px-2 sm:px-3 py-1 font-mono font-medium tabular-nums bg-green-500/10 border border-green-500/30 rounded-full text-green-400 text-xs sm:text-sm flex items-center gap-1 sm:gap-1.5">
               <GamepadIcon className="w-3 h-3 sm:w-4 sm:h-4" />
               6 Games
             </span>
-            <span className="px-2 sm:px-3 py-1 bg-cyan-500/10 border border-cyan-500/30 rounded-full text-cyan-400 text-xs sm:text-sm flex items-center gap-1 sm:gap-1.5">
+            <span className="px-2 sm:px-3 py-1 font-mono font-medium tabular-nums bg-cyan-500/10 border border-cyan-500/30 rounded-full text-cyan-400 text-xs sm:text-sm flex items-center gap-1 sm:gap-1.5">
               <BoltIcon className="w-3 h-3 sm:w-4 sm:h-4" />
               $1 Per Turn
             </span>
-            <span className="px-2 sm:px-3 py-1 bg-yellow-500/10 border border-yellow-500/30 rounded-full text-yellow-400 text-xs sm:text-sm font-bold">
+            <span className="px-2 sm:px-3 py-1 font-mono font-medium tabular-nums bg-yellow-500/10 border border-yellow-500/30 rounded-full text-yellow-400 text-xs sm:text-sm">
               💰 ${balance.toFixed(2)}
             </span>
           </div>
@@ -156,22 +156,22 @@ export default function Home() {
                 <div className="flex items-center justify-between mb-3 sm:mb-4">
                   <game.icon className="w-8 h-8 sm:w-10 sm:h-10 text-green-400" />
                   <div className="flex gap-2">
-                    <span className="px-2 py-1 bg-green-500/10 rounded-md text-xs text-green-400 border border-green-500/20">
+                    <span className="px-2 py-1 bg-green-500/10 rounded-md font-mono font-medium text-[11px] uppercase tracking-wider text-green-400 border border-green-500/20">
                       {game.difficulty}
                     </span>
-                    <span className="px-2 py-1 bg-cyan-500/10 rounded-md text-xs text-cyan-400 border border-cyan-500/20">
+                    <span className="px-2 py-1 bg-cyan-500/10 rounded-md font-mono font-bold tabular-nums text-xs text-cyan-400 border border-cyan-500/20">
                       ${game.costPerTurn}
                     </span>
                   </div>
                 </div>
-                <h3 className="text-lg sm:text-xl font-bold text-white group-hover:text-green-400 transition-colors">
+                <h3 className="font-display font-semibold text-lg sm:text-xl tracking-tight text-white group-hover:text-green-400 transition-colors">
                   {game.title}
                 </h3>
-                <p className="text-gray-500 text-xs sm:text-sm leading-relaxed">
+                <p className="font-sans font-normal text-zinc-500 text-xs sm:text-sm leading-relaxed">
                   {game.description}
                 </p>
                 <div className="mt-3 sm:mt-4 flex items-center gap-2 text-green-400 group-hover:text-cyan-400 transition-colors">
-                  <span className="text-xs sm:text-sm font-semibold">
+                  <span className="font-sans font-semibold tracking-wide text-xs sm:text-sm">
                     {balance >= game.costPerTurn ? 'Play Now' : 'Not Enough Credits'}
                   </span>
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 sm:h-4 sm:w-4 group-hover:translate-x-1 transition-transform" viewBox="0 0 20 20" fill="currentColor">
@@ -185,7 +185,7 @@ export default function Home() {
       </header>
 
       <footer className="border-t border-green-500/10 py-6 text-center">
-        <p className="text-gray-600 text-sm flex items-center justify-center gap-1.5">
+        <p className="font-sans font-normal text-zinc-600 text-xs flex items-center justify-center gap-1.5">
           <GamepadIcon className="w-4 h-4" />
           Neon Arcade — Built with React & Tailwind CSS
         </p>

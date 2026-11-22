@@ -6,12 +6,79 @@ import { useGameCurrency } from '@/context/GameCurrencyContext';
 
 interface Card {
   id: number;
-  emoji: string;
+  symbol: number;
   isFlipped: boolean;
   isMatched: boolean;
 }
 
-const EMOJIS = ['🎮', '🎯', '🎲', '🎪', '🎨', '🎭', '🎸', '🎺'];
+const iconClass = "w-8 h-8 sm:w-10 sm:h-10";
+
+const ControllerIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={iconClass}>
+    <rect x="2" y="7" width="20" height="10" rx="5" />
+    <path d="M7 12h4M9 10v4" />
+    <circle cx="16" cy="11" r="1" />
+    <circle cx="18" cy="13" r="1" />
+  </svg>
+);
+
+const TargetIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={iconClass}>
+    <circle cx="12" cy="12" r="9" />
+    <circle cx="12" cy="12" r="5" />
+    <circle cx="12" cy="12" r="1" />
+  </svg>
+);
+
+const DiceIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={iconClass}>
+    <rect x="3" y="3" width="18" height="18" rx="3" />
+    <circle cx="8" cy="8" r="1" />
+    <circle cx="12" cy="12" r="1" />
+    <circle cx="16" cy="16" r="1" />
+  </svg>
+);
+
+const TentIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={iconClass}>
+    <path d="M3 20L12 4l9 16z" />
+    <path d="M12 20v-6" />
+    <path d="M8 20l4-6 4 6" />
+  </svg>
+);
+
+const PaletteIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={iconClass}>
+    <path d="M12 3a9 9 0 100 18c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.2 0-1.1.9-2 2-2h2.5c2.5 0 4.5-2 4.5-4.5C22 6 17.5 3 12 3z" />
+    <circle cx="7.5" cy="10.5" r="1" />
+    <circle cx="10.5" cy="7.5" r="1" />
+    <circle cx="15" cy="8" r="1" />
+  </svg>
+);
+
+const MaskIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={iconClass}>
+    <path d="M4 5c3 1.5 5 1.5 8 0 3 1.5 5 1.5 8 0v6c0 4-3.5 7-8 7s-8-3-8-7z" />
+    <path d="M8 11c.8 1 2.4 1 3.2 0M12.8 11c.8 1 2.4 1 3.2 0" />
+  </svg>
+);
+
+const NoteIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={iconClass}>
+    <path d="M9 18V5l12-2v13" />
+    <circle cx="6" cy="18" r="3" />
+    <circle cx="18" cy="16" r="3" />
+  </svg>
+);
+
+const HornIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={iconClass}>
+    <path d="M3 10v4h4l10 5V5L7 10z" />
+    <path d="M21 9v6" />
+  </svg>
+);
+
+const ICONS = [ControllerIcon, TargetIcon, DiceIcon, TentIcon, PaletteIcon, MaskIcon, NoteIcon, HornIcon];
 const GAME_COST = 1;
 
 const shuffleArray = <T,>(array: T[]): T[] => {
@@ -24,9 +91,9 @@ const shuffleArray = <T,>(array: T[]): T[] => {
 };
 
 const createOrderedBoard = (): Card[] =>
-  EMOJIS.flatMap((emoji, index) => [
-    { id: index * 2, emoji, isFlipped: false, isMatched: false },
-    { id: index * 2 + 1, emoji, isFlipped: false, isMatched: false },
+  ICONS.flatMap((_, index) => [
+    { id: index * 2, symbol: index, isFlipped: false, isMatched: false },
+    { id: index * 2 + 1, symbol: index, isFlipped: false, isMatched: false },
   ]);
 
 const createBoard = (): Card[] => shuffleArray(createOrderedBoard());
@@ -47,7 +114,7 @@ export default function MemoryGame() {
     setCards(createBoard());
   }, []);
 
-  const totalPairs = EMOJIS.length;
+  const totalPairs = ICONS.length;
   const isWon = matches === totalPairs;
 
   useEffect(() => {
@@ -66,7 +133,7 @@ export default function MemoryGame() {
       const firstCard = cards.find(c => c.id === first);
       const secondCard = cards.find(c => c.id === second);
 
-      if (firstCard && secondCard && firstCard.emoji === secondCard.emoji) {
+      if (firstCard && secondCard && firstCard.symbol === secondCard.symbol) {
         setTimeout(() => {
           setCards(prev => prev.map(card =>
             card.id === first || card.id === second
@@ -134,7 +201,7 @@ export default function MemoryGame() {
   };
 
   return (
-    <div className="min-h-fit flex flex-col md:flex-row md:gap-10 items-baseline justify-between px-4 sm:px-8 pt-2 sm:pt-4 pb-1 sm:pb-2 bg-black/70">
+    <div className="min-h-fit flex flex-col md:flex-row md:gap-10 items-baseline justify-center px-4 sm:px-8 pt-2 sm:pt-4 pb-1 sm:pb-2 bg-black/70 rounded-2xl sm:rounded-3xl overflow-hidden">
        <div className="grid grid-cols-4 gap-3 sm:gap-4">
           <div className="bg-dark-surface rounded-lg sm:rounded-xl p-2 sm:p-3 text-center border border-green-500/20">
             <p className="text-gray-500 text-[10px] sm:text-xs">Time</p>
@@ -155,7 +222,7 @@ export default function MemoryGame() {
           {/* extra */}
             {isWon && (
           <div className="mb-4 text-center p-3 sm:p-4 bg-green-500/10 border border-green-500/30 rounded-xl animate-pulse-neon">
-            <p className="text-green-400 text-lg sm:text-xl font-bold">🎉 You Won!</p>
+            <p className="text-green-400 text-lg sm:text-xl font-bold">You Won!</p>
             <p className="text-green-300 text-xs sm:text-sm">
               Completed in {moves} moves • {formatTime(timer)}
             </p>
@@ -178,7 +245,7 @@ export default function MemoryGame() {
           </div>
         </div>
 
-      <div className="bg-dark-card/90 backdrop-blur-sm border border-cyan-500/20 rounded-xl sm:rounded-2xl p-3 sm:p-5 max-w-120 w-full">
+      <div className="bg-dark-card/90 backdrop-blur-sm border border-cyan-500/20 rounded-2xl sm:rounded-3xl overflow-hidden p-3 sm:p-5 max-w-120 w-full mx-auto">
        
 {/* grid */}
         <div className="grid grid-cols-4 gap-3 sm:gap-4">
@@ -194,7 +261,7 @@ export default function MemoryGame() {
                   <span className="text-cyan-500/40 text-xl sm:text-3xl font-bold">?</span>
                 </div>
                 <div className={`flip-card-front ${card.isMatched ? 'bg-green-500/10 border-2 border-green-500/40' : 'bg-green-500/10 border-2 border-green-500/40'}`}>
-                  <span className="text-2xl sm:text-4xl animate-pulse-neon">{card.emoji}</span>
+                  <span className="text-2xl sm:text-4xl animate-pulse-neon">{(() => { const Icon = ICONS[card.symbol]; return <Icon />; })()}</span>
                 </div>
               </div>
             </button>

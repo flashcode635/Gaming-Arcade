@@ -304,7 +304,7 @@ export default function Minesweeper() {
                 {gemsFound > 0 && (
                   <button
                     onClick={resetGame}
-                    className="w-full bg-dark-card/90 border border-green-500/30 text-green-400 font-semibold py-2.5 sm:py-3 rounded-xl hover:bg-green-500/10 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
+                    className="w-full bg-dark-card/90 border border-green-500/30 text-green-400 font-semibold py-2.5 sm:py-3 rounded-xl hover:bg-green-500/10 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer"
                   >
                     <ResetIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                     <span>Restart Game</span>
@@ -316,7 +316,7 @@ export default function Minesweeper() {
             {gameStarted && gameOver && (
               <button
                 onClick={resetGame}
-                className="w-full bg-dark-card/90 border border-green-500/30 text-green-400 font-semibold py-2.5 sm:py-3 rounded-xl hover:bg-green-500/10 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
+                className="w-full bg-dark-card/90 border border-green-500/30 text-green-400 font-semibold py-2.5 sm:py-3 rounded-xl hover:bg-green-500/10 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer"
               >
                 <ResetIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                 <span>Restart Game</span>

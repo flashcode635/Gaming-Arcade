@@ -7,6 +7,9 @@
   --color-dark-bg: #000000;
   --color-dark-card: #0a0f0a;
   --color-dark-surface: #0d1a0d;
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-display: var(--font-space-grotesk), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
 }
 
 body {
