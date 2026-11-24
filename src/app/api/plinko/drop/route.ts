@@ -33,14 +33,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const result = await placeBet(username, bet, roundId);
-    if (!result.ok) {
-      return NextResponse.json(
-        { ok: false, error: result.error, balance: result.balance },
-        { status: 402 },
-      );
-    }
     return NextResponse.json(
-      { ok: true, round: result.round },
+      { ok: true, round: result.round, replay: result.replay },
       { headers: { 'Cache-Control': 'no-store' } },
     );
   } catch (err) {

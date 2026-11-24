@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import type { GameType } from '@/lib/games';
-import { PlinkoIcon, SudokuIcon, TicTacToeIcon, SnakeIcon, MemoryIcon, MinesweeperIcon, GamepadIcon, BoltIcon } from '../assets/svg/GameIcons';
+import { PlinkoIcon, SudokuIcon, TicTacToeIcon, SnakeIcon, MemoryIcon, MinesweeperIcon, GamepadIcon, BoltIcon, TrophyIcon, SettingsIcon } from '../assets/svg/GameIcons';
 import { useGameCurrency } from '../context/GameCurrencyContext';
 import { TopBar } from './core/topBar';
 
@@ -65,11 +65,11 @@ const games = [
 
 export default function Home() {
   const { balance } = useGameCurrency();
-
+  
   return (
     <div className="min-h-screen flex flex-col bg-dark-card/20 backdrop-blur-sm">
-      <TopBar />
-      <header className="flex-1 flex flex-col items-center justify-center px-3 sm:px-4 py-6 sm:py-10">
+      <header className="flex-1 flex flex-col items-center justify-center px-3 sm:px-4 py-2 sm:py-6">
+       <TopBar />
         {/* Title Section */}
         <div className="text-center mb-8 sm:mb-12">
           <h1 className="font-display font-bold text-6xl md:text-7xl uppercase tracking-widest text-white mb-3 sm:mb-4 animate-float flex flex-col md:flex-row gap-4">
@@ -87,6 +87,9 @@ export default function Home() {
             <span className="px-2 sm:px-3 py-1 font-mono font-medium tabular-nums bg-cyan-500/10 border border-cyan-500/30 rounded-full text-cyan-400 text-xs sm:text-sm flex items-center gap-1 sm:gap-1.5">
               <BoltIcon className="w-3 h-3 sm:w-4 sm:h-4" />
               $1 Per Turn
+            </span>
+            <span className="px-2 sm:px-3 py-1 font-mono font-medium tabular-nums bg-yellow-500/10 border border-yellow-500/30 rounded-full text-yellow-400 text-xs sm:text-sm">
+              💰 ${balance.toFixed(2)}
             </span>
           </div>
         </div>

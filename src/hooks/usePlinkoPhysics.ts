@@ -3,20 +3,13 @@
 /**
  * usePlinkoGame — client controller for the server-authoritative Plinko flow.
  *
- * (The file keeps its historical name; it no longer runs any physics. The ball
- * follows a direction array ("L"/"R" per peg row) handed down by the server.)
- *
- * Flow per drop:
- *   1. POST /api/plinko/drop { username, roundId }   — fate is sealed server-side
- *   2. server replies { round: { slotIndex, multiplier, payout, path, ... } }
- *   3. hook turns `path` into waypoints for the current board geometry and adds
- *      an ActiveBall; the canvas renderer samples it deterministically
- *   4. when the animation finishes, the net delta (payout - bet) is applied to
- *      the shared wallet. Deltas compose safely even with balls in flight.
- *
- * The displayed balance can therefore never spoil the outcome mid-air, and the
- * authoritative value is re-synced from GET /api/plinko/state on mount and on
- * window focus.
+ * Money flow per drop (shared IndexedDB wallet, same as every other game):
+ *   1. the bet (DROP_BET) is deducted IMMEDIATELY — every drop always costs;
+ *   2. POST /api/plinko/drop { username, roundId } — outcome sealed server-side;
+ *   3. the returned path becomes an ActiveBall the canvas replays;
+ *   4. when the animation finishes the payout is credited back;
+ *   5. if the request fails the bet is refunded.
+ * The server no longer owns a wallet — the client wallet is the only balance.
  */
 
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 'react';
@@ -24,7 +17,6 @@ import {
   DROP_BET,
   STARTING_BALANCE,
   computeWaypoints,
-  round2,
   type BallPath,
   type BoardGeometry,
   type PathMove,
@@ -68,7 +60,7 @@ interface UsePlinkoGameOptions {
 }
 
 export function usePlinkoGame({ username, geometryRef }: UsePlinkoGameOptions) {
-  const { balance, setBalance } = useGameCurrency();
+  const { balance, addBalance, deductBalance, setBalance } = useGameCurrency();
 
   const ballsRef = useRef<ActiveBall[]>([]);
   const landEventsRef = useRef<LandEvent[]>([]);
@@ -82,8 +74,6 @@ export function usePlinkoGame({ username, geometryRef }: UsePlinkoGameOptions) {
   const [recentRounds, setRecentRounds] = useState<RecentRound[]>([]);
   const [outOfCredits, setOutOfCredits] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isSyncing, setIsSyncing] = useState(true);
-  const lastSyncRef = useRef(0);
 
   useEffect(() => {
     balanceRef.current = balance;
@@ -93,22 +83,13 @@ export function usePlinkoGame({ username, geometryRef }: UsePlinkoGameOptions) {
     landEventsRef.current = [...landEventsRef.current.slice(-5), event];
   }, []);
 
-  const applyServerBalance = useCallback(
-    (serverBalance: number) => {
-      balanceRef.current = serverBalance;
-      setBalance(round2(serverBalance));
-    },
-    [setBalance],
-  );
-
-  /** Applies the net effect of a finished round and removes its ball. */
+  /** Credits the payout of a finished round and removes its ball. */
   const settleBall = useCallback(
     (ball: ActiveBall) => {
       ballsRef.current = ballsRef.current.filter((b) => b.id !== ball.id);
       timersRef.current.delete(ball.id);
       setPendingCount(ballsRef.current.length);
-      balanceRef.current = round2(balanceRef.current - ball.bet + ball.payout);
-      setBalance(round2(balanceRef.current));
+      if (ball.payout > 0) addBalance(ball.payout);
       setLastWin(ball.multiplier);
       pushLandEvent({
         id: ball.id,
@@ -117,7 +98,7 @@ export function usePlinkoGame({ username, geometryRef }: UsePlinkoGameOptions) {
         at: Date.now(),
       });
     },
-    [pushLandEvent, setBalance],
+    [addBalance, pushLandEvent],
   );
 
   const clearAllBalls = useCallback(() => {
@@ -128,44 +109,24 @@ export function usePlinkoGame({ username, geometryRef }: UsePlinkoGameOptions) {
     setPendingCount(0);
   }, []);
 
-  // --- sync authoritative state (mount + focus) ---------------------------
-  const syncState = useCallback(
-    async (force = false) => {
-      const now = Date.now();
-      if (!force && now - lastSyncRef.current < 2000) return;
-      lastSyncRef.current = now;
-      try {
-        const res = await fetch(`/api/plinko/state?username=${encodeURIComponent(username)}`, {
-          cache: 'no-store',
-        });
-        const data = await res.json();
-        if (data?.ok) {
-          applyServerBalance(data.balance);
-          setRecentRounds(Array.isArray(data.rounds) ? data.rounds.slice(0, MAX_RECENT) : []);
-        }
-      } catch {
-        // offline — keep whatever we display locally
-      } finally {
-        setIsSyncing(false);
+  // --- refresh the recent-rounds ledger (never touches the wallet) ---------
+  const syncRounds = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/plinko/state?username=${encodeURIComponent(username)}`, {
+        cache: 'no-store',
+      });
+      const data = await res.json();
+      if (data?.ok) {
+        setRecentRounds(Array.isArray(data.rounds) ? data.rounds.slice(0, MAX_RECENT) : []);
       }
-    },
-    [applyServerBalance, username],
-  );
+    } catch {
+      // offline — ledger refresh is cosmetic, ignore
+    }
+  }, [username]);
 
   useEffect(() => {
-    setIsSyncing(true);
-    void syncState(true);
-  }, [syncState]);
-
-  useEffect(() => {
-    const onFocus = () => void syncState(false);
-    window.addEventListener('focus', onFocus);
-    document.addEventListener('visibilitychange', onFocus);
-    return () => {
-      window.removeEventListener('focus', onFocus);
-      document.removeEventListener('visibilitychange', onFocus);
-    };
-  }, [syncState]);
+    void syncRounds();
+  }, [syncRounds]);
 
   // --- drop ----------------------------------------------------------------
   const drop = useCallback(async () => {
@@ -173,6 +134,12 @@ export function usePlinkoGame({ username, geometryRef }: UsePlinkoGameOptions) {
     // Conservative funds check: every unsettled ball already spent its bet.
     const available = balanceRef.current - ballsRef.current.length * DROP_BET;
     if (available < DROP_BET) {
+      setOutOfCredits(true);
+      return;
+    }
+
+    // Charge the wallet up-front — every single drop costs the bet.
+    if (!deductBalance(DROP_BET)) {
       setOutOfCredits(true);
       return;
     }
@@ -189,15 +156,14 @@ export function usePlinkoGame({ username, geometryRef }: UsePlinkoGameOptions) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, roundId }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => undefined);
 
-      if (res.status === 402) {
-        setOutOfCredits(true);
-        if (typeof data?.balance === 'number') applyServerBalance(data.balance);
-        return;
-      }
       if (!res.ok || !data?.ok || !data.round) {
-        setError('Server could not process the drop. Try again.');
+        // Server refused — give the bet back so the player never loses money
+        // on a drop that did not happen.
+        addBalance(DROP_BET);
+        if (res.status === 402) setOutOfCredits(true);
+        else setError('Server could not process the drop — bet refunded.');
         return;
       }
 
@@ -231,33 +197,33 @@ export function usePlinkoGame({ username, geometryRef }: UsePlinkoGameOptions) {
       const timer = setTimeout(() => settleBall(ball), ball.anim.totalMs + 60);
       timersRef.current.set(ball.id, timer);
     } catch {
-      setError('Network error — the drop was not placed.');
+      addBalance(DROP_BET); // network error — refund
+      setError('Network error — the bet was refunded.');
     } finally {
       inFlightRef.current -= 1;
     }
-  }, [applyServerBalance, geometryRef, settleBall, username]);
+  }, [addBalance, deductBalance, geometryRef, settleBall, username]);
 
-  // --- reset (server-side top-up) ------------------------------------------
+  // --- reset (top the shared wallet back up) --------------------------------
   const reset = useCallback(async () => {
     try {
-      const res = await fetch('/api/plinko/reset', {
+      await fetch('/api/plinko/reset', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username }),
       });
-      const data = await res.json();
-      clearAllBalls();
-      setLastWin(null);
-      setTotalDrops(0);
-      setRecentRounds([]);
-      setOutOfCredits(false);
-      setError(null);
-      if (data?.ok) applyServerBalance(data.balance);
-      else applyServerBalance(STARTING_BALANCE);
     } catch {
-      setError('Reset failed — check your connection.');
+      // reset endpoint is cosmetic — ignore network hiccups
     }
-  }, [applyServerBalance, clearAllBalls, username]);
+    clearAllBalls();
+    setLastWin(null);
+    setTotalDrops(0);
+    setRecentRounds([]);
+    setOutOfCredits(false);
+    setError(null);
+    balanceRef.current = STARTING_BALANCE;
+    setBalance(STARTING_BALANCE);
+  }, [clearAllBalls, setBalance, username]);
 
   // --- geometry resync (called by the canvas on resize) --------------------
   const resyncGeometry = useCallback(() => {
@@ -276,8 +242,7 @@ export function usePlinkoGame({ username, geometryRef }: UsePlinkoGameOptions) {
     };
   }, []);
 
-  const canDrop =
-    !outOfCredits && !isSyncing && balance - pendingCount * DROP_BET >= DROP_BET;
+  const canDrop = !outOfCredits && balance - pendingCount * DROP_BET >= DROP_BET;
 
   return {
     ballsRef,
@@ -288,7 +253,6 @@ export function usePlinkoGame({ username, geometryRef }: UsePlinkoGameOptions) {
     recentRounds,
     outOfCredits,
     error,
-    isSyncing,
     pendingCount,
     canDrop,
     drop,

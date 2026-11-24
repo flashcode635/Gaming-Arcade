@@ -42,22 +42,37 @@ Every game costs **$1 per turn** from the in-game balance.
 
 ### Prerequisites
 
-- Node.js 18.18 or newer
-- npm
+- Node.js 18.18 or newer (or Bun 1.x)
+- npm or Bun
+- MongoDB (optional — see below)
 
 ### Installation
 
 ```bash
-npm install
+bun install   # or: npm install
 ```
 
 ### Run the development server
 
 ```bash
-npm run dev
+bun run dev   # or: npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### MongoDB
+
+Signup/login accounts are stored in MongoDB. The app connects to
+`mongodb://127.0.0.1:27017`; if no daemon is running it automatically falls back
+to an embedded in-memory MongoDB so the app still works. Set the `MONGODB_URI`
+environment variable to override the connection string.
+
+A helper script is included to start a persistent local daemon using the cached
+mongod binary (requires one prior `bun install`):
+
+```bash
+bun run scripts/mongo-setup.ts
+```
 
 ## Available scripts
 

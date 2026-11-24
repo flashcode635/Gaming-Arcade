@@ -139,7 +139,6 @@ export default function Plinko() {
     recentRounds,
     outOfCredits,
     error,
-    isSyncing,
     canDrop,
     drop,
     reset,
@@ -238,7 +237,7 @@ export default function Plinko() {
               </div>
             </div>
             <p className="mt-2 text-[10px] text-gray-500 uppercase tracking-wider">
-              Server wallet {isSyncing ? '• syncing…' : '• synced'}
+              Wallet saved in IndexedDB
             </p>
           </div>
 
@@ -303,17 +302,17 @@ export default function Plinko() {
               ) : (
                 <>
                   <NoCreditsIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span>{isSyncing ? 'Syncing…' : 'No Credits'}</span>
+                  <span>No Credits</span>
                 </>
               )}
             </button>
-            {/* <button
+            <button
               onClick={() => void reset()}
               className="w-full bg-dark-card/90 border border-green-500/30 text-green-400 font-semibold py-2.5 sm:py-3 rounded-xl hover:bg-green-500/10 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
             >
               <ResetIcon className="w-4 h-4 sm:w-5 sm:h-5" />
               <span>Reset Game</span>
-            </button> */}
+            </button>
           </div>
 
           {error && (
@@ -342,14 +341,12 @@ export default function Plinko() {
         <div className="flex-1 flex flex-col items-center justify-center order-1 lg:order-2 gap-2">
           <canvas
             ref={canvasRef}
-              onClick={() => {canDrop && void drop();}}
-              // disabled={!canDrop}
             className="rounded-xl border border-green-500/20 bg-black max-w-full"
             style={{ maxWidth: '100%', height: 'auto' }}
           />
-          {/* <p className="text-[11px] text-gray-500 text-center">
+          <p className="text-[11px] text-gray-500 text-center">
             Outcome is decided by the server (weighted CSPRNG) — the client only replays the returned path.
-          </p> */}
+          </p>
         </div>
       </div>
     </div>

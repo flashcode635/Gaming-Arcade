@@ -14,39 +14,49 @@ const INITIAL_SPEED = 150;
 const GAME_COST = 1;
 
 export default function Snake() {
-  const { balance, addBalance, deductBalance } = useGameCurrency();
+  const { balance, deductBalance } = useGameCurrency();
   const [snake, setSnake] = useState<Position[]>([{ x: 10, y: 10 }]);
   const [food, setFood] = useState<Position>({ x: 15, y: 15 });
   const [direction, setDirection] = useState<Direction>('RIGHT');
   const [isRunning, setIsRunning] = useState(false);
   const [gameOver, setGameOver] = useState(false);
+  const [gameWon, setGameWon] = useState(false);
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
   const [speed, setSpeed] = useState(INITIAL_SPEED);
   const directionRef = useRef<Direction>('RIGHT');
   const gameLoopRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const generateFood = useCallback((snakeBody: Position[]): Position => {
-    let newFood: Position;
-    do {
-      newFood = {
-        x: Math.floor(Math.random() * GRID_SIZE),
-        y: Math.floor(Math.random() * GRID_SIZE),
-      };
-    } while (snakeBody.some(seg => seg.x === newFood.x && seg.y === newFood.y));
-    return newFood;
+  /**
+   * Picks a random FREE cell for the next apple. Returns null when the snake
+   * covers the whole board (victory) — never loops forever.
+   */
+  const generateFood = useCallback((snakeBody: Position[]): Position | null => {
+    const totalCells = GRID_SIZE * GRID_SIZE;
+    if (snakeBody.length >= totalCells) return null;
+
+    const occupied = new Set(snakeBody.map(seg => seg.y * GRID_SIZE + seg.x));
+    const freeCells: number[] = [];
+    for (let i = 0; i < totalCells; i++) {
+      if (!occupied.has(i)) freeCells.push(i);
+    }
+    if (freeCells.length === 0) return null;
+
+    const pick = freeCells[Math.floor(Math.random() * freeCells.length)] as number;
+    return { x: pick % GRID_SIZE, y: Math.floor(pick / GRID_SIZE) };
   }, []);
 
   const resetGame = useCallback(() => {
     if (balance < GAME_COST) return;
-    
+
     deductBalance(GAME_COST);
     const initialSnake = [{ x: 10, y: 10 }];
     setSnake(initialSnake);
-    setFood(generateFood(initialSnake));
+    setFood(generateFood(initialSnake) ?? { x: 15, y: 15 });
     setDirection('RIGHT');
     directionRef.current = 'RIGHT';
     setGameOver(false);
+    setGameWon(false);
     setScore(0);
     setSpeed(INITIAL_SPEED);
     setIsRunning(false);
@@ -82,8 +92,19 @@ export default function Snake() {
 
       if (head.x === food.x && head.y === food.y) {
         setScore(prev => prev + 10);
-        setFood(generateFood(newSnake));
         setSpeed(prev => Math.max(50, prev - 3));
+
+        // The next apple spawns immediately — as long as a free cell exists.
+        const nextFood = generateFood(newSnake);
+        if (nextFood === null) {
+          // Board fully covered: victory, no more apples to place.
+          setGameWon(true);
+          setIsRunning(false);
+          setHighScore(prev => Math.max(prev, score + 10));
+          setFood(prevFood => prevFood);
+        } else {
+          setFood(nextFood);
+        }
       } else {
         newSnake.pop();
       }
@@ -93,13 +114,13 @@ export default function Snake() {
   }, [food, generateFood, score]);
 
   useEffect(() => {
-    if (isRunning && !gameOver) {
+    if (isRunning && !gameOver && !gameWon) {
       gameLoopRef.current = setInterval(moveSnake, speed);
     }
     return () => {
       if (gameLoopRef.current) clearInterval(gameLoopRef.current);
     };
-  }, [isRunning, gameOver, moveSnake, speed]);
+  }, [isRunning, gameOver, gameWon, moveSnake, speed]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -130,7 +151,7 @@ export default function Snake() {
           e.preventDefault();
           break;
         case ' ':
-          if (!gameOver) {
+          if (!gameOver && !gameWon) {
             setIsRunning(prev => !prev);
           }
           e.preventDefault();
@@ -140,7 +161,7 @@ export default function Snake() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [gameOver]);
+  }, [gameOver, gameWon]);
 
   const handleDirectionButton = (newDir: Direction) => {
     const dir = directionRef.current;
@@ -230,7 +251,22 @@ export default function Snake() {
               </div>
             )}
 
-            {!isRunning && !gameOver && (
+            {gameWon && (
+              <div className="absolute inset-0 bg-black/85 flex flex-col items-center justify-center">
+                <p className="text-cyan-400 text-2xl font-bold mb-1">You Win!</p>
+                <p className="text-green-400 text-sm mb-2">You covered the whole board!</p>
+                <p className="text-white text-lg">Score: {score}</p>
+                <button
+                  onClick={resetGame}
+                  disabled={balance < GAME_COST}
+                  className="mt-4 bg-cyan-500 text-black font-bold py-2 px-6 rounded-lg hover:bg-cyan-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {balance >= GAME_COST ? `Play Again (-$${GAME_COST})` : 'Not Enough Credits'}
+                </button>
+              </div>
+            )}
+
+            {!isRunning && !gameOver && !gameWon && (
               <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center">
                 <SnakeIcon className="w-10 h-10 text-green-400 mb-2" />
                 <p className="text-green-400 text-xl font-bold mb-2">Snake</p>
@@ -268,7 +304,7 @@ export default function Snake() {
             ◀
           </button>
           <button
-            onClick={() => isRunning ? setIsRunning(false) : setIsRunning(true)}
+            onClick={() => { if (!gameOver && !gameWon) setIsRunning(prev => !prev); }}
             className="bg-dark-surface border border-cyan-500/30 text-cyan-400 font-bold py-3 rounded-lg hover:bg-cyan-500/10 transition-colors text-sm"
           >
             {isRunning ? '⏸' : '▶'}
@@ -300,7 +336,7 @@ export default function Snake() {
         </div>
 
         <p className="text-gray-600 text-xs text-center mt-3">
-          Use Arrow Keys / WASD to move • Space to pause
+          Use Arrow Keys / WASD to move • Space to pause • Apples keep spawning until you lose or fill the board
         </p>
       </div>
     </div>

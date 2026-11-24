@@ -65,7 +65,6 @@ export interface RoundRecord {
   multiplier: number;
   payout: number;
   path: PathMove[];
-  balanceAfter: number;
   createdAt: string;
 }
 

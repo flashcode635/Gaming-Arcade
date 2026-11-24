@@ -1,13 +1,11 @@
 /**
- * Server-only Plinko store: authoritative balances + round ledger.
+ * Server-only Plinko store: outcome sealing + round ledger.
  *
- * Backend for the "fate is sealed on the server" flow. Uses a simple JSON file
- * under `.data/` so the project runs with zero extra dependencies (no DB setup).
- * All mutations are serialized per username with an in-process promise chain and
- * written atomically (tmp file + rename).
- *
- * Swap this module for a real DB (Prisma + a rounds table) without touching the
- * API routes — they only talk to placeBet / getState / resetBalance.
+ * The WALLET lives on the client (IndexedDB, shared with every other game):
+ * each drop deducts the bet immediately and each landing credits the payout.
+ * The server's job is only to seal each round's fate (weighted CSPRNG slot +
+ * derived path) and persist a ledger for history. Swap the ledger for a real
+ * DB without touching the API routes.
  */
 
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
@@ -30,16 +28,8 @@ import {
 // ---------------------------------------------------------------------------
 
 const DATA_DIR = path.join(process.cwd(), '.data');
-const ACCOUNTS_FILE = path.join(DATA_DIR, 'accounts.json');
 const ROUNDS_FILE = path.join(DATA_DIR, 'rounds.json');
 const MAX_LEDGER_ROWS = 200;
-
-interface Account {
-  balance: number;
-  updatedAt: string;
-}
-
-type Accounts = Record<string, Account>;
 
 function readJson<T>(file: string, fallback: T): T {
   try {
@@ -65,12 +55,10 @@ interface StoreState {
   chains: Map<string, Promise<unknown>>;
   /** Idempotency cache: client roundId -> the round already booked for it. */
   processed: Map<string, RoundRecord>;
-  nonce: number;
 }
 
 const globalStore = globalThis as typeof globalThis & { __plinkoStore?: StoreState };
-const store: StoreState =
-  globalStore.__plinkoStore ?? { chains: new Map(), processed: new Map(), nonce: 0 };
+const store: StoreState = globalStore.__plinkoStore ?? { chains: new Map(), processed: new Map() };
 globalStore.__plinkoStore = store;
 
 function withLock<T>(key: string, fn: () => T): Promise<T> {
@@ -87,11 +75,9 @@ function withLock<T>(key: string, fn: () => T): Promise<T> {
 // Public API
 // ---------------------------------------------------------------------------
 
-export type PlaceBetResult =
-  | { ok: true; round: RoundRecord; replay: boolean }
-  | { ok: false; error: 'INSUFFICIENT_FUNDS'; balance: number };
+export type PlaceBetResult = { ok: true; round: RoundRecord; replay: boolean };
 
-/** Usernames are display strings; keep them boring since they key the store. */
+/** Usernames are display strings; keep them boring since they key the ledger. */
 export function sanitizeUsername(raw: unknown): string {
   const s = typeof raw === 'string' ? raw.trim() : '';
   const cleaned = s.replace(/[^A-Za-z0-9 _-]/g, '').slice(0, 24);
@@ -99,8 +85,9 @@ export function sanitizeUsername(raw: unknown): string {
 }
 
 /**
- * The heart of the game: deduct the bet, seal the fate (weighted CSPRNG slot),
- * derive the direction array, credit the payout, persist the round — atomically.
+ * The heart of the game: seal the fate (weighted CSPRNG slot), derive the
+ * direction array, persist the round — atomically per username. Money is
+ * handled entirely by the client wallet.
  */
 export function placeBet(
   username: string,
@@ -108,22 +95,10 @@ export function placeBet(
   clientRoundId?: string,
 ): Promise<PlaceBetResult> {
   return withLock(username, (): PlaceBetResult => {
-    // Idempotency: a retried request with the same roundId never charges twice.
+    // Idempotency: a retried request with the same roundId never books twice.
     if (clientRoundId) {
       const seen = store.processed.get(clientRoundId);
       if (seen) return { ok: true, round: seen, replay: true };
-    }
-
-    const accounts = readJson<Accounts>(ACCOUNTS_FILE, {});
-    const account = accounts[username] ?? {
-      balance: STARTING_BALANCE,
-      updatedAt: new Date().toISOString(),
-    };
-
-    if (account.balance < bet) {
-      accounts[username] = account;
-      writeJsonAtomic(ACCOUNTS_FILE, accounts);
-      return { ok: false, error: 'INSUFFICIENT_FUNDS', balance: account.balance };
     }
 
     // --- fate is sealed here ---------------------------------------------
@@ -131,7 +106,6 @@ export function placeBet(
     const path: PathMove[] = generatePath(slotIndex);
     const multiplier = MULTIPLIERS[slotIndex] ?? 0;
     const payout = round2(bet * multiplier);
-    const balanceAfter = round2(account.balance - bet + payout);
     // ----------------------------------------------------------------------
 
     const round: RoundRecord = {
@@ -142,14 +116,8 @@ export function placeBet(
       multiplier,
       payout,
       path,
-      balanceAfter,
       createdAt: new Date().toISOString(),
     };
-
-    account.balance = balanceAfter;
-    account.updatedAt = round.createdAt;
-    accounts[username] = account;
-    writeJsonAtomic(ACCOUNTS_FILE, accounts);
 
     const ledger = readJson<RoundRecord[]>(ROUNDS_FILE, []);
     ledger.push(round);
@@ -177,14 +145,12 @@ export interface StateResult {
 
 export function getState(username: string): Promise<StateResult> {
   return withLock(username, (): StateResult => {
-    const accounts = readJson<Accounts>(ACCOUNTS_FILE, {});
-    const balance = accounts[username]?.balance ?? STARTING_BALANCE;
     const rounds = readJson<RoundRecord[]>(ROUNDS_FILE, [])
       .filter((r) => r.username === username)
       .slice(-10)
       .reverse()
       .map(toSummary);
-    return { ok: true, balance, bet: DROP_BET, rounds };
+    return { ok: true, balance: STARTING_BALANCE, bet: DROP_BET, rounds };
   });
 }
 
@@ -193,13 +159,8 @@ export interface ResetResult {
   balance: number;
 }
 
-export function resetBalance(username: string): Promise<ResetResult> {
-  return withLock(username, (): ResetResult => {
-    const accounts = readJson<Accounts>(ACCOUNTS_FILE, {});
-    accounts[username] = { balance: STARTING_BALANCE, updatedAt: new Date().toISOString() };
-    writeJsonAtomic(ACCOUNTS_FILE, accounts);
-    return { ok: true, balance: STARTING_BALANCE };
-  });
+export function resetBalance(_username: string): Promise<ResetResult> {
+  return Promise.resolve({ ok: true, balance: STARTING_BALANCE });
 }
 
 function toSummary(r: RoundRecord): RoundSummary {
