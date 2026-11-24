@@ -307,13 +307,13 @@ export default function Plinko() {
                 </>
               )}
             </button>
-            <button
+            {/* <button
               onClick={() => void reset()}
               className="w-full bg-dark-card/90 border border-green-500/30 text-green-400 font-semibold py-2.5 sm:py-3 rounded-xl hover:bg-green-500/10 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
             >
               <ResetIcon className="w-4 h-4 sm:w-5 sm:h-5" />
               <span>Reset Game</span>
-            </button>
+            </button> */}
           </div>
 
           {error && (
@@ -342,6 +342,8 @@ export default function Plinko() {
         <div className="flex-1 flex flex-col items-center justify-center order-1 lg:order-2 gap-2">
           <canvas
             ref={canvasRef}
+              onClick={() => {canDrop && void drop();}}
+              // disabled={!canDrop}
             className="rounded-xl border border-green-500/20 bg-black max-w-full"
             style={{ maxWidth: '100%', height: 'auto' }}
           />
