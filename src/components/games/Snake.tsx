@@ -12,9 +12,11 @@ const GRID_SIZE = 20;
 const CELL_SIZE = 20;
 const INITIAL_SPEED = 150;
 const GAME_COST = 1;
+/** Registry payout promise: "$0.5 / apple" — credited live as apples are eaten. */
+const APPLE_PAYOUT = 0.5;
 
 export default function Snake() {
-  const { balance, deductBalance } = useGameCurrency();
+  const { balance, deductBalance, addBalance } = useGameCurrency();
   const [snake, setSnake] = useState<Position[]>([{ x: 10, y: 10 }]);
   const [food, setFood] = useState<Position>({ x: 15, y: 15 });
   const [direction, setDirection] = useState<Direction>('RIGHT');
@@ -26,6 +28,19 @@ export default function Snake() {
   const [speed, setSpeed] = useState(INITIAL_SPEED);
   const directionRef = useRef<Direction>('RIGHT');
   const gameLoopRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const creditedApplesRef = useRef(0);
+
+  // $0.5 per apple, credited live. Derived from score (+10 per apple) in an
+  // effect instead of the moveSnake updater so StrictMode can never
+  // double-credit a payout inside a render-phase updater.
+  useEffect(() => {
+    const apples = Math.floor(score / 10);
+    const uncredited = apples - creditedApplesRef.current;
+    if (uncredited > 0) {
+      creditedApplesRef.current = apples;
+      addBalance(uncredited * APPLE_PAYOUT);
+    }
+  }, [score, addBalance]);
 
   /**
    * Picks a random FREE cell for the next apple. Returns null when the snake
@@ -50,6 +65,7 @@ export default function Snake() {
     if (balance < GAME_COST) return;
 
     deductBalance(GAME_COST);
+    creditedApplesRef.current = 0;
     const initialSnake = [{ x: 10, y: 10 }];
     setSnake(initialSnake);
     setFood(generateFood(initialSnake) ?? { x: 15, y: 15 });
@@ -182,15 +198,15 @@ export default function Snake() {
         <div className="flex items-center justify-between mb-3 sm:mb-4">
           <div className="text-center">
             <p className="text-gray-500 text-xs sm:text-sm">Score</p>
-            <p className="text-xl sm:text-2xl font-bold text-green-400">{score}</p>
+            <p className="text-xl sm:text-2xl font-bold text-green-400 tabular-nums">{score}</p>
           </div>
           <div className="text-center">
             <p className="text-gray-500 text-xs sm:text-sm">High Score</p>
-            <p className="text-xl sm:text-2xl font-bold text-cyan-400">{highScore}</p>
+            <p className="text-xl sm:text-2xl font-bold text-cyan-400 tabular-nums">{highScore}</p>
           </div>
           <div className="text-center">
             <p className="text-gray-500 text-xs sm:text-sm">Length</p>
-            <p className="text-xl sm:text-2xl font-bold text-teal-400">{snake.length}</p>
+            <p className="text-xl sm:text-2xl font-bold text-teal-400 tabular-nums">{snake.length}</p>
           </div>
         </div>
 
@@ -241,10 +257,11 @@ export default function Snake() {
               <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center">
                 <p className="text-green-400 text-2xl font-bold mb-2">Game Over!</p>
                 <p className="text-white text-lg">Score: {score}</p>
+                <p className="text-cyan-300 text-sm mt-1 tabular-nums">Earned ${((Math.floor(score / 10)) * APPLE_PAYOUT).toFixed(2)}</p>
                 <button
                   onClick={resetGame}
                   disabled={balance < GAME_COST}
-                  className="mt-4 bg-green-500 text-black font-bold py-2 px-6 rounded-lg hover:bg-green-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="mt-4 bg-green-500 text-black font-bold py-2.5 px-6 rounded-lg hover:bg-green-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-11"
                 >
                   {balance >= GAME_COST ? `Play Again (-$${GAME_COST})` : 'Not Enough Credits'}
                 </button>
@@ -256,10 +273,11 @@ export default function Snake() {
                 <p className="text-cyan-400 text-2xl font-bold mb-1">You Win!</p>
                 <p className="text-green-400 text-sm mb-2">You covered the whole board!</p>
                 <p className="text-white text-lg">Score: {score}</p>
+                <p className="text-cyan-300 text-sm mt-1 tabular-nums">Earned ${((Math.floor(score / 10)) * APPLE_PAYOUT).toFixed(2)}</p>
                 <button
                   onClick={resetGame}
                   disabled={balance < GAME_COST}
-                  className="mt-4 bg-cyan-500 text-black font-bold py-2 px-6 rounded-lg hover:bg-cyan-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="mt-4 bg-cyan-500 text-black font-bold py-2.5 px-6 rounded-lg hover:bg-cyan-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-11"
                 >
                   {balance >= GAME_COST ? `Play Again (-$${GAME_COST})` : 'Not Enough Credits'}
                 </button>
@@ -279,7 +297,7 @@ export default function Snake() {
                     }
                   }}
                   disabled={balance < GAME_COST}
-                  className="bg-green-500 text-black font-bold py-2 px-6 rounded-lg hover:bg-green-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-green-500 text-black font-bold py-2.5 px-6 rounded-lg hover:bg-green-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-11"
                 >
                   {balance >= GAME_COST ? `Start Game (-$${GAME_COST})` : 'Not Enough Credits'}
                 </button>
@@ -328,7 +346,7 @@ export default function Snake() {
         <div className="flex gap-2 sm:gap-3">
           <button
             onClick={resetGame}
-            className="flex-1 bg-linear-to-r from-green-500 to-cyan-500 text-black font-bold py-2.5 sm:py-3 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 text-sm sm:text-base"
+            className="flex-1 bg-linear-to-r from-green-500 to-emerald-700 text-black font-bold py-2.5 sm:py-3 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 text-sm sm:text-base"
           >
             <ResetIcon className="w-4 h-4 sm:w-5 sm:h-5" />
             New Game
@@ -336,7 +354,7 @@ export default function Snake() {
         </div>
 
         <p className="text-gray-600 text-xs text-center mt-3">
-          Use Arrow Keys / WASD to move • Space to pause • Apples keep spawning until you lose or fill the board
+          Use Arrow Keys / WASD to move • Space to pause • Every apple pays $0.50
         </p>
       </div>
     </div>

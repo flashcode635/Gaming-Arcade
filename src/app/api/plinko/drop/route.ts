@@ -8,11 +8,13 @@ export const dynamic = 'force-dynamic';
 /**
  * POST /api/plinko/drop
  * Body: { username?: string, roundId?: string }
+ * Header: Idempotency-Key: <roundId> (Stripe-style — takes precedence)
  *
- * The server alone decides the outcome: it deducts the bet, picks the slot with
- * a weighted CSPRNG, derives the L/R direction array (its length is the row
- * count; the number of "R"s equals the chosen slot), persists the round and
- * returns everything the client needs to play the animation.
+ * The server alone decides the outcome: it picks the slot with a weighted
+ * CSPRNG, derives the L/R direction array (its length is the row count; the
+ * number of "R"s equals the chosen slot), persists the round and returns
+ * everything the client needs to play the animation. Retries carrying the
+ * same Idempotency-Key replay the sealed round instead of booking a new one.
  */
 export async function POST(request: NextRequest) {
   let body: unknown = {};
@@ -24,10 +26,13 @@ export async function POST(request: NextRequest) {
   const payload = (body ?? {}) as { username?: unknown; roundId?: unknown; bet?: unknown };
 
   const username = sanitizeUsername(payload.username);
+  const headerKey = request.headers.get('Idempotency-Key');
+  const keySource =
+    typeof headerKey === 'string' && headerKey.length > 0 && headerKey.length <= 64
+      ? headerKey
+      : payload.roundId;
   const roundId =
-    typeof payload.roundId === 'string' && payload.roundId.length <= 64
-      ? payload.roundId
-      : undefined;
+    typeof keySource === 'string' && keySource.length <= 64 ? keySource : undefined;
   // Bets are fixed for now; the server ignores whatever the client claims.
   const bet = DROP_BET;
 

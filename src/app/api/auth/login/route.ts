@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import type { ObjectId } from 'mongodb';
 import { getDb } from '@/lib/mongo';
 import { toPublicUser, validateUsername, verifyPassword } from '@/lib/auth';
+import { SIGNUP_BONUS } from '@/lib/wallet-constants';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -32,6 +33,7 @@ export async function POST(request: NextRequest) {
       _id: ObjectId;
       username: string;
       createdAt?: Date | string;
+      balance?: number;
       salt: string;
       passwordHash: string;
     }>({ username });
@@ -46,8 +48,12 @@ export async function POST(request: NextRequest) {
     }
 
     await users.updateOne({ _id: user._id }, { $set: { lastLoginAt: new Date() } });
+    // Restore the player's saved wallet; fall back to the signup bonus for
+    // accounts created before the balance column existed.
+    const balance =
+      typeof user.balance === 'number' && user.balance >= 0 ? user.balance : SIGNUP_BONUS;
     return NextResponse.json(
-      { ok: true, user: toPublicUser(user) },
+      { ok: true, user: toPublicUser(user), balance },
       { headers: { 'Cache-Control': 'no-store' } },
     );
   } catch (err) {

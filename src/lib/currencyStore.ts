@@ -1,3 +1,5 @@
+import { SIGNUP_BONUS, TRIAL_BALANCE } from '@/lib/wallet-constants';
+
 const DB_NAME = 'neon-arcade';
 const STORE_NAME = 'wallet';
 const BALANCE_KEY = 'balance';
@@ -65,4 +67,4 @@ export async function writeStoredBalance(balance: number): Promise<void> {
   });
 }
 
-export { STARTING_BALANCE };
+export { STARTING_BALANCE, SIGNUP_BONUS, TRIAL_BALANCE };

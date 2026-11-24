@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ResetIcon } from '@/assets/svg/Icons';
 import { useGameCurrency } from '@/context/GameCurrencyContext';
 
@@ -80,6 +80,9 @@ const HornIcon = () => (
 
 const ICONS = [ControllerIcon, TargetIcon, DiceIcon, TentIcon, PaletteIcon, MaskIcon, NoteIcon, HornIcon];
 const GAME_COST = 1;
+/** Registry payout promise: "Perfect bonus" — every win pays, a perfect game pays extra. */
+const MEMORY_WIN_PAYOUT = 2;
+const MEMORY_PERFECT_BONUS = 5;
 
 const shuffleArray = <T,>(array: T[]): T[] => {
   const shuffled = [...array];
@@ -108,14 +111,27 @@ export default function MemoryGame() {
   const [isRunning, setIsRunning] = useState(false);
   const [bestScore, setBestScore] = useState<number | null>(null);
   const [isLocked, setIsLocked] = useState(false);
+  const timeoutsRef = useRef<number[]>([]);
 
-  // Shuffle after mount so server and client markup match (no hydration mismatch)
+  // Shuffle after mount so server and client markup match (no hydration
+  // mismatch). The two-pass render is the documented fix for random UI — the
+  // react-hooks lint flags every setState-in-effect, so silence it here only.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCards(createBoard());
   }, []);
 
   const totalPairs = ICONS.length;
   const isWon = matches === totalPairs;
+
+  // Pending flip timeouts must never leak into the next game.
+  useEffect(() => {
+    const pending = timeoutsRef;
+    return () => {
+      pending.current.forEach((t) => clearTimeout(t));
+      pending.current = [];
+    };
+  }, []);
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
@@ -125,47 +141,49 @@ export default function MemoryGame() {
     return () => clearInterval(interval);
   }, [isRunning, isWon]);
 
+  // Resolve a pair of flipped cards. All state writes happen inside the
+  // timeout callbacks (never synchronously in the effect body) so the
+  // react-hooks/set-state-in-effect rule stays green.
   useEffect(() => {
-    if (flippedCards.length === 2) {
-      setIsLocked(true);
-      setMoves(m => m + 1);
-      const [first, second] = flippedCards;
-      const firstCard = cards.find(c => c.id === first);
-      const secondCard = cards.find(c => c.id === second);
+    if (flippedCards.length !== 2) return;
+    const [first, second] = flippedCards;
+    const firstCard = cards.find(c => c.id === first);
+    const secondCard = cards.find(c => c.id === second);
 
-      if (firstCard && secondCard && firstCard.symbol === secondCard.symbol) {
-        setTimeout(() => {
-          setCards(prev => prev.map(card =>
-            card.id === first || card.id === second
-              ? { ...card, isMatched: true }
-              : card
-          ));
-          setMatches(m => m + 1);
-          setFlippedCards([]);
-          setIsLocked(false);
-        }, 500);
-      } else {
-        setTimeout(() => {
-          setCards(prev => prev.map(card =>
-            card.id === first || card.id === second
-              ? { ...card, isFlipped: false }
-              : card
-          ));
-          setFlippedCards([]);
-          setIsLocked(false);
-        }, 1000);
-      }
+    if (firstCard && secondCard && firstCard.symbol === secondCard.symbol) {
+      const t = window.setTimeout(() => {
+        setCards(prev => prev.map(card =>
+          card.id === first || card.id === second
+            ? { ...card, isMatched: true }
+            : card
+        ));
+        const nextMatches = matches + 1;
+        setMatches(nextMatches);
+        setFlippedCards([]);
+        setIsLocked(false);
+        if (nextMatches === totalPairs) {
+          setIsRunning(false);
+          setBestScore(prev => (prev === null || moves < prev ? moves : prev));
+          // Payout: every win pays; a perfect game (only matching flips,
+          // moves === pairs) collects the extra bonus.
+          addBalance(MEMORY_WIN_PAYOUT);
+          if (moves === totalPairs) addBalance(MEMORY_PERFECT_BONUS);
+        }
+      }, 500);
+      timeoutsRef.current.push(t);
+    } else {
+      const t = window.setTimeout(() => {
+        setCards(prev => prev.map(card =>
+          card.id === first || card.id === second
+            ? { ...card, isFlipped: false }
+            : card
+        ));
+        setFlippedCards([]);
+        setIsLocked(false);
+      }, 1000);
+      timeoutsRef.current.push(t);
     }
-  }, [flippedCards, cards]);
-
-  useEffect(() => {
-    if (isWon && isRunning) {
-      setIsRunning(false);
-      if (bestScore === null || moves < bestScore) {
-        setBestScore(moves);
-      }
-    }
-  }, [isWon, isRunning, moves, bestScore]);
+  }, [flippedCards, cards, matches, moves, totalPairs, addBalance]);
 
   const handleCardClick = (id: number) => {
     if (isLocked) return;
@@ -178,13 +196,21 @@ export default function MemoryGame() {
     setCards(prev => prev.map(c =>
       c.id === id ? { ...c, isFlipped: true } : c
     ));
-    setFlippedCards(prev => [...prev, id]);
+    const nextFlipped = [...flippedCards, id];
+    if (nextFlipped.length === 2) {
+      // Locking + move counting live here (event handler), not in an effect.
+      setMoves(m => m + 1);
+      setIsLocked(true);
+    }
+    setFlippedCards(nextFlipped);
   };
 
   const resetGame = () => {
     if (balance < GAME_COST) return;
-    
+
     deductBalance(GAME_COST);
+    timeoutsRef.current.forEach(t => clearTimeout(t));
+    timeoutsRef.current = [];
     setCards(createBoard());
     setFlippedCards([]);
     setMoves(0);
@@ -205,26 +231,29 @@ export default function MemoryGame() {
        <div className="grid grid-cols-4 gap-3 sm:gap-4">
           <div className="bg-dark-surface rounded-lg sm:rounded-xl p-2 sm:p-3 text-center border border-green-500/20">
             <p className="text-gray-500 text-[10px] sm:text-xs">Time</p>
-            <p className="text-white font-bold text-sm sm:text-lg font-mono">{formatTime(timer)}</p>
+            <p className="text-white font-bold text-sm sm:text-lg font-mono tabular-nums">{formatTime(timer)}</p>
           </div>
           <div className="bg-dark-surface rounded-lg sm:rounded-xl p-2 sm:p-3 text-center border border-green-500/20">
             <p className="text-gray-500 text-[10px] sm:text-xs">Moves</p>
-            <p className="text-white font-bold text-sm sm:text-lg">{moves}</p>
+            <p className="text-white font-bold text-sm sm:text-lg tabular-nums">{moves}</p>
           </div>
           <div className="bg-dark-surface rounded-lg sm:rounded-xl p-2 sm:p-3 text-center border border-cyan-500/20">
             <p className="text-gray-500 text-[10px] sm:text-xs">Matches</p>
-            <p className="text-white font-bold text-sm sm:text-lg">{matches}/{totalPairs}</p>
+            <p className="text-white font-bold text-sm sm:text-lg tabular-nums">{matches}/{totalPairs}</p>
           </div>
           <div className="bg-dark-surface rounded-lg sm:rounded-xl p-2 sm:p-3 text-center border border-cyan-500/20">
             <p className="text-gray-500 text-[10px] sm:text-xs">Best</p>
-            <p className="text-white font-bold text-sm sm:text-lg">{bestScore ?? '-'}</p>
+            <p className="text-white font-bold text-sm sm:text-lg tabular-nums">{bestScore ?? '-'}</p>
           </div>
-          {/* extra */}
+          {/* win banner (col-span-4 keeps it out of the stats grid cells) */}
             {isWon && (
-          <div className="mb-4 text-center p-3 sm:p-4 bg-green-500/10 border border-green-500/30 rounded-xl animate-pulse-neon">
-            <p className="text-green-400 text-lg sm:text-xl font-bold">You Won!</p>
-            <p className="text-green-300 text-xs sm:text-sm">
+          <div className="col-span-4 text-center p-3 sm:p-4 bg-green-500/10 border border-green-500/30 rounded-xl animate-pulse-neon">
+            <p className="text-green-400 text-lg sm:text-xl font-bold tabular-nums">
+              You Won! +${(MEMORY_WIN_PAYOUT + (moves === totalPairs ? MEMORY_PERFECT_BONUS : 0)).toFixed(2)}
+            </p>
+            <p className="text-green-300 text-xs sm:text-sm tabular-nums">
               Completed in {moves} moves • {formatTime(timer)}
+              {moves === totalPairs ? ' • PERFECT GAME +$5.00' : ''}
             </p>
           </div>
         )}
@@ -233,14 +262,14 @@ export default function MemoryGame() {
               <button
                 onClick={resetGame}
                 disabled={balance < GAME_COST}
-                className="w-full bg-linear-to-r from-green-500 to-cyan-500 text-black font-bold py-2.5 sm:py-3 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-linear-to-r from-green-500 to-emerald-700 text-black font-bold py-2.5 sm:py-3 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ResetIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                 {balance >= GAME_COST ? `New Game (-$${GAME_COST})` : 'Not Enough Credits'}
               </button>
 
               <p className="text-gray-600 text-xs text-center mt-3">
-                Click cards to flip them. Find all matching pairs!
+                Click cards to flip them. Every win pays $2.00 — a perfect game adds a $5.00 bonus.
               </p>
           </div>
         </div>

@@ -51,7 +51,7 @@ export const BetAmountSlider = ({
                     onClick={() => setBetAmount(Math.max(1, betAmount - 1))}
                     disabled={betAmount <= 1}
                     aria-label="Decrease bet"
-                    className={`w-8 h-8 flex items-center justify-center rounded-md bg-dark-surface text-gray-400 ${accentText} ${isCyan ? 'hover:bg-cyan-500/10 hover:border-cyan-500/30' : 'hover:bg-green-500/10 hover:border-green-500/30'} border border-white/5 transition text-sm font-bold select-none disabled:opacity-40 disabled:cursor-not-allowed`}
+                    className={`w-11 h-11 flex items-center justify-center rounded-md bg-dark-surface text-gray-400 ${accentText} ${isCyan ? 'hover:bg-cyan-500/10 hover:border-cyan-500/30' : 'hover:bg-green-500/10 hover:border-green-500/30'} border border-white/5 transition text-base font-bold select-none disabled:opacity-40 disabled:cursor-not-allowed`}
                   >
                     −
                   </button>
@@ -91,7 +91,7 @@ export const BetAmountSlider = ({
                     onClick={() => setBetAmount(Math.min(maxBet, betAmount + 1))}
                     disabled={betAmount >= maxBet}
                     aria-label="Increase bet"
-                    className={`w-8 h-8 flex items-center justify-center rounded-md bg-dark-surface text-gray-400 ${isCyan ? 'hover:text-cyan-400 hover:bg-cyan-500/10 hover:border-cyan-500/30' : 'hover:text-green-400 hover:bg-green-500/10 hover:border-green-500/30'} border border-white/5 transition text-sm font-bold select-none disabled:opacity-40 disabled:cursor-not-allowed`}
+                    className={`w-11 h-11 flex items-center justify-center rounded-md bg-dark-surface text-gray-400 ${isCyan ? 'hover:text-cyan-400 hover:bg-cyan-500/10 hover:border-cyan-500/30' : 'hover:text-green-400 hover:bg-green-500/10 hover:border-green-500/30'} border border-white/5 transition text-base font-bold select-none disabled:opacity-40 disabled:cursor-not-allowed`}
                   >
                     +
                   </button>
@@ -115,7 +115,7 @@ export const BetAmountSlider = ({
                       key={b.label}
                       type="button"
                       onClick={b.action}
-                      className={`py-1.5 rounded-md bg-dark-surface text-gray-300 ${isCyan ? 'hover:text-cyan-400 hover:bg-cyan-500/10 hover:border-cyan-500/30' : 'hover:text-green-400 hover:bg-green-500/10 hover:border-green-500/30'} border border-white/5 text-xs font-semibold transition select-none`}
+                      className={`min-h-11 flex items-center justify-center rounded-md bg-dark-surface text-gray-300 ${isCyan ? 'hover:text-cyan-400 hover:bg-cyan-500/10 hover:border-cyan-500/30' : 'hover:text-green-400 hover:bg-green-500/10 hover:border-green-500/30'} border border-white/5 text-xs font-semibold transition select-none`}
                     >
                       {b.label}
                     </button>

@@ -1,142 +1,175 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useEffect, useId, useRef, useState } from "react";
-import { SettingsIcon } from "@/assets/svg/GameIcons";
-import { useGameCurrency } from "@/context/GameCurrencyContext";
-import { useTheme } from "@/context/ThemeContext";
+import Link from 'next/link';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { SettingsIcon } from '@/assets/svg/GameIcons';
+import { useGameCurrency } from '@/context/GameCurrencyContext';
+import { useTheme } from '@/context/ThemeContext';
+import { useLogoutWithUndo } from '@/hooks/useLogoutWithUndo';
 
-const SunIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <circle cx="12" cy="12" r="4" />
-    <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32 1.41-1.41" />
+const SunIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+    <path
+      fillRule="evenodd"
+      d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"
+      clipRule="evenodd"
+    />
   </svg>
 );
 
-const MoonIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+const MoonIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+    <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
   </svg>
 );
 
-const ChevronIcon = ({ open }: { open: boolean }) => (
-  <svg
-    className={`w-4 h-4 text-zinc-500 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
-    viewBox="0 0 20 20"
-    fill="currentColor"
-    aria-hidden="true"
-  >
-    <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06z" clipRule="evenodd" />
+const LogoutIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+    <path
+      fillRule="evenodd"
+      d="M3 4.25A2.25 2.25 0 015.25 2h5.5A2.25 2.25 0 0113 4.25V5.5h-1.5V4.25a.75.75 0 00-.75-.75h-5.5a.75.75 0 00-.75.75v11.5c0 .414.336.75.75.75h5.5a.75.75 0 00.75-.75V14.5H13v1.25A2.25 2.25 0 0110.75 18h-5.5A2.25 2.25 0 013 15.75V4.25z"
+      clipRule="evenodd"
+    />
+    <path
+      fillRule="evenodd"
+      d="M6 10a.75.75 0 01.75-.75h9.546l-2.048-2.048a.75.75 0 111.06-1.06l3.329 3.328a.75.75 0 010 1.06l-3.329 3.328a.75.75 0 11-1.06-1.06l2.048-2.048H6.75A.75.75 0 016 10z"
+      clipRule="evenodd"
+    />
   </svg>
 );
 
-export default function ProfileMenu() {
-  const { username, balance } = useGameCurrency();
+/**
+ * Player profile dropdown: the avatar + name trigger opens a menu with the
+ * theme picker, settings, and account actions. Replaces the standalone
+ * theme/settings buttons that used to sit in the top bar and game nav.
+ */
+export const ProfileMenu = () => {
+  const { username, balance, isSignedIn } = useGameCurrency();
   const { isDarkMode, setIsDarkMode } = useTheme();
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const menuId = useId();
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (e: PointerEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
-
-  const initial = username.charAt(0).toUpperCase();
+  const logoutWithUndo = useLogoutWithUndo();
 
   return (
-    <div ref={rootRef} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen(v => !v)}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-controls={menuId}
-        className="flex items-center gap-2 h-9 pl-1 pr-2 rounded-full border
-         border-green-500/30 bg-green-500/10 hover:bg-green-500/20 transition-colors focus-visible:ring-2 focus-visible:ring-green-400 outline-hidden"
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        aria-label="Open player profile menu"
+        className="flex items-center gap-2 min-h-10 rounded-xl px-2.5 py-1.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60"
       >
-        <span className="size-7 rounded-full bg-linear-to-br from-emerald-700 to-emerald-400 flex items-center justify-center text-white font-display font-bold text-sm">
-          {initial}
+        <span className="cursor-pointer relative shrink-0">
+          <span className="profile-avatar w-9 h-9 rounded-full flex items-center justify-center text-emerald-300 font-bold text-sm">
+            {username.charAt(0).toUpperCase()}
+          </span>
+          {/* <span
+            className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[#080b09] ${
+              isSignedIn ? 'bg-green-400' : 'bg-yellow-500'
+            }`}
+          /> */}
         </span>
-        <span className="hidden sm:block max-w-28 truncate font-sans font-medium text-sm text-white">
-          {username}
+        {/* <span className="hidden sm:block text-left leading-tight">
+          <span className="block font-display font-semibold text-zinc-200 text-xs max-w-32 truncate">
+            {username}
+          </span>
+          <span className="block font-mono text-[10px] uppercase tracking-widest text-zinc-500">
+            {isSignedIn ? 'Player' : 'Guest trial'}
+          </span>
         </span>
-        {/* <ChevronIcon open={open} /> */}
-      </button>
-
-      {open && (
-        <div
-          id={menuId}
-          role="menu"
-          className="absolute right-0 mt-2 w-72 origin-top-right rounded-xl border border-green-500/20 bg-dark-card shadow-lg shadow-black/50 overflow-hidden z-50"
+        <svg
+          viewBox="0 0 20 20"
+          fill="currentColor"
+          className="w-3.5 h-3.5 text-zinc-600 shrink-0"
+          aria-hidden="true"
         >
-          {/* Identity */}
-          <div className="flex items-center gap-3 px-4 py-4 border-b border-green-500/10">
-            <span className="size-11 shrink-0 rounded-full bg-linear-to-br from-emerald-700 to-emerald-400 flex items-center justify-center text-white font-display font-bold text-lg">
-              {initial}
-            </span>
+          <path
+            fillRule="evenodd"
+            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+            clipRule="evenodd"
+          />
+        </svg> */}
+      </DropdownMenuTrigger>
+
+      <DropdownMenuContent align="end" sideOffset={8} className="profile-menu w-64">
+        <DropdownMenuLabel asChild>
+          <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
-              <p className="truncate font-display font-semibold text-white leading-tight">{username}</p>
-              <p className="font-mono text-xs text-zinc-500 tabular-nums">Balance ${balance.toFixed(2)}</p>
+              <p className="font-display font-semibold text-base leading-tight truncate">
+                {username}
+              </p>
+              <p className="font-mono text-[10px] uppercase tracking-widest text-zinc-500">
+                {isSignedIn ? 'Signed in' : 'Guest trial — $50 balance'}
+              </p>
             </div>
-          </div>
-
-          {/* Settings */}
-          <div className="p-1.5">
-            <Link
-              href="/settings"
-              role="menuitem"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-zinc-300 hover:text-white hover:bg-green-500/10 transition-colors"
-            >
-              <SettingsIcon className="w-4.5 h-4.5 text-green-400" />
-              Settings
-            </Link>
-          </div>
-
-          {/* Theme */}
-          <div className="px-4 py-3 border-t border-green-500/10">
-            <p className="mb-2 font-sans text-[11px] font-semibold uppercase tracking-widest text-zinc-500">
-              Theme
+            <p className="font-mono font-bold text-sm text-emerald-300 tabular-nums shrink-0">
+              ${balance.toFixed(2)}
             </p>
-            <div role="radiogroup" aria-label="Theme" className="grid grid-cols-2 gap-1 p-1 rounded-lg border border-green-500/20 bg-green-500/5">
-              <button
-                type="button"
-                role="radio"
-                aria-checked={isDarkMode}
-                onClick={() => setIsDarkMode(true)}
-                className={`flex items-center justify-center gap-1.5 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  isDarkMode ? "bg-green-500/20 text-green-400" : "text-zinc-500 hover:text-white"
-                }`}
-              >
-                <MoonIcon /> Dark
-              </button>
-              <button
-                type="button"
-                role="radio"
-                aria-checked={!isDarkMode}
-                onClick={() => setIsDarkMode(false)}
-                className={`flex items-center justify-center gap-1.5 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  !isDarkMode ? "bg-green-500/20 text-green-400" : "text-zinc-500 hover:text-white"
-                }`}
-              >
-                <SunIcon /> Light
-              </button>
-            </div>
           </div>
-        </div>
-      )}
-    </div>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+
+        <DropdownMenuRadioGroup
+          value={isDarkMode ? 'dark' : 'light'}
+          onValueChange={(value) => setIsDarkMode(value === 'dark')}
+        >
+          <DropdownMenuRadioItem value="dark" className="gap-2 [&>span]:mt-auto [&>span]:mb-auto">
+            <SunIcon className="w-4 h-4 text-emerald-300" />
+            Dark Cyber
+          </DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="light" className="gap-2 [&>span]:mt-auto [&>span]:mb-auto">
+            <MoonIcon className="w-4 h-4 text-emerald-300" />
+            Light Emerald
+          </DropdownMenuRadioItem>
+        </DropdownMenuRadioGroup>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem asChild>
+          <Link
+            href={isSignedIn ? "/settings" : "/login?next=%2Fsettings"}
+            className="gap-2"
+          >
+            <SettingsIcon className="w-4 h-4 text-emerald-300" />
+            {isSignedIn ? "Settings" : "Settings · sign in"}
+          </Link>
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator />
+
+        {isSignedIn ? (
+          <DropdownMenuItem
+            onSelect={() => logoutWithUndo()}
+            className="gap-2 text-red-400 focus:text-red-300 focus:bg-red-500/10"
+          >
+            <LogoutIcon className="w-4 h-4" />
+            Log out
+            <span className="ml-auto font-mono text-[10px] uppercase tracking-widest text-zinc-500">
+              8s undo
+            </span>
+          </DropdownMenuItem>
+        ) : (
+          <>
+            <DropdownMenuItem asChild>
+              <Link href="/login" className="gap-2 text-blue-400 focus:text-blue-300">
+                Log in
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link
+                href="/signup"
+                className="profile-signup gap-2 font-semibold"
+              >
+                Sign up — $100 bonus
+              </Link>
+            </DropdownMenuItem>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
-}
+};

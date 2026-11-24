@@ -1,11 +1,12 @@
 'use client';
 
+import AuthShell from '@/components/auth/AuthShell';
 import AuthCard from '@/components/auth/AuthCard';
 
 export default function SignupPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center px-3 sm:px-4 py-8">
+    <AuthShell>
       <AuthCard initialMode="signup" />
-    </div>
+    </AuthShell>
   );
 }

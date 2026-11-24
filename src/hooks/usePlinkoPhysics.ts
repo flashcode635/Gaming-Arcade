@@ -5,17 +5,18 @@
  *
  * Money flow per drop (shared IndexedDB wallet, same as every other game):
  *   1. the bet (DROP_BET) is deducted IMMEDIATELY — every drop always costs;
- *   2. POST /api/plinko/drop { username, roundId } — outcome sealed server-side;
+ *   2. POST /api/plinko/drop { username, roundId } with Idempotency-Key:
+ *      roundId — the server dedupes by that key, so one retry of the same
+ *      drop can never book (or charge) twice;
  *   3. the returned path becomes an ActiveBall the canvas replays;
  *   4. when the animation finishes the payout is credited back;
- *   5. if the request fails the bet is refunded.
+ *   5. if both attempts fail the bet is refunded.
  * The server no longer owns a wallet — the client wallet is the only balance.
  */
 
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 'react';
 import {
   DROP_BET,
-  STARTING_BALANCE,
   computeWaypoints,
   type BallPath,
   type BoardGeometry,
@@ -53,13 +54,35 @@ const BALL_COLORS = [
 const MAX_IN_FLIGHT = 4;
 const MAX_RECENT = 8;
 
+/** localStorage ledger of round ids whose payout this wallet already collected. */
+const CREDITED_KEY = 'neon-arcade:plinko:credited-rounds';
+
+function readCreditedSet(): Set<string> {
+  try {
+    const raw = localStorage.getItem(CREDITED_KEY);
+    return new Set<string>(raw ? (JSON.parse(raw) as string[]) : []);
+  } catch {
+    return new Set<string>();
+  }
+}
+
+function persistCreditedSet(set: Set<string>): void {
+  try {
+    localStorage.setItem(CREDITED_KEY, JSON.stringify(Array.from(set).slice(-200)));
+  } catch {
+    // private mode / storage full — worst case a payout re-credits once
+  }
+}
+
 interface UsePlinkoGameOptions {
   username: string;
   /** Live board geometry; re-read on every drop so resizes are respected. */
   geometryRef: MutableRefObject<BoardGeometry>;
+  /** Wallet snapshot when the game opened — Reset tops up to this value. */
+  startBalance: number;
 }
 
-export function usePlinkoGame({ username, geometryRef }: UsePlinkoGameOptions) {
+export function usePlinkoGame({ username, geometryRef, startBalance }: UsePlinkoGameOptions) {
   const { balance, addBalance, deductBalance, setBalance } = useGameCurrency();
 
   const ballsRef = useRef<ActiveBall[]>([]);
@@ -90,6 +113,9 @@ export function usePlinkoGame({ username, geometryRef }: UsePlinkoGameOptions) {
       timersRef.current.delete(ball.id);
       setPendingCount(ballsRef.current.length);
       if (ball.payout > 0) addBalance(ball.payout);
+      const credited = readCreditedSet();
+      credited.add(ball.id);
+      persistCreditedSet(credited);
       setLastWin(ball.multiplier);
       pushLandEvent({
         id: ball.id,
@@ -128,6 +154,58 @@ export function usePlinkoGame({ username, geometryRef }: UsePlinkoGameOptions) {
     void syncRounds();
   }, [syncRounds]);
 
+  // --- stale-while-revalidate (rounds ledger only) --------------------------
+  // When the window regains focus or the network returns, quietly refresh the
+  // recent-rounds list. The WALLET is deliberately never revalidated here —
+  // it is IndexedDB-first, and acting on a stale balance could cost money.
+  useEffect(() => {
+    const revalidate = () => {
+      if (document.visibilityState === 'visible') void syncRounds();
+    };
+    window.addEventListener('focus', revalidate);
+    document.addEventListener('visibilitychange', revalidate);
+    window.addEventListener('online', revalidate);
+    return () => {
+      window.removeEventListener('focus', revalidate);
+      document.removeEventListener('visibilitychange', revalidate);
+      window.removeEventListener('online', revalidate);
+    };
+  }, [syncRounds]);
+
+  // --- reload reconciliation ------------------------------------------------
+  // The bet is charged the moment a drop starts and the payout is credited
+  // when the animation ends. If the tab dies in between, the server already
+  // sealed the round but the payout was never credited — reconcile the last
+  // rounds against the localStorage ledger on every mount and pay what is
+  // still owed. Idempotent: rounds are marked credited BEFORE the money moves.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/plinko/state?username=${encodeURIComponent(username)}`, {
+          cache: 'no-store',
+        });
+        const data = await res.json();
+        if (cancelled || !data?.ok || !Array.isArray(data.rounds)) return;
+
+        const credited = readCreditedSet();
+        let owed = 0;
+        for (const round of data.rounds as Array<{ id: string; payout: number }>) {
+          if (credited.has(round.id)) continue;
+          credited.add(round.id);
+          if (round.payout > 0) owed += round.payout;
+        }
+        persistCreditedSet(credited);
+        if (owed > 0 && !cancelled) addBalance(owed);
+      } catch {
+        // offline — whatever is owed is reconciled on the next visit
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [username, addBalance]);
+
   // --- drop ----------------------------------------------------------------
   const drop = useCallback(async () => {
     if (inFlightRef.current >= MAX_IN_FLIGHT) return;
@@ -145,17 +223,43 @@ export function usePlinkoGame({ username, geometryRef }: UsePlinkoGameOptions) {
     }
 
     inFlightRef.current += 1;
+    // Stripe-style idempotency: one UUID per drop, reused on every retry of
+    // THIS drop. The server books the round under this key, so a retried
+    // request replays the sealed outcome instead of creating a new round.
     const roundId =
       typeof crypto !== 'undefined' && 'randomUUID' in crypto
         ? crypto.randomUUID()
         : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
+    const requestDrop = async (): Promise<Response> => {
+      let lastResponse: Response | null = null;
+      // Initial attempt + one automatic retry, both carrying the SAME
+      // Idempotency-Key so the server-side dedupe keeps them safe.
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const res = await fetch('/api/plinko/drop', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Idempotency-Key': roundId,
+            },
+            body: JSON.stringify({ username, roundId }),
+          });
+          if (res.ok || (res.status >= 400 && res.status < 500)) {
+            // Success or a definite client error — never retry those.
+            return res;
+          }
+          lastResponse = res; // 5xx — fall through to the retry
+        } catch (err) {
+          lastResponse = undefined as unknown as Response;
+          if (attempt === 1) throw err;
+        }
+      }
+      return lastResponse as Response;
+    };
+
     try {
-      const res = await fetch('/api/plinko/drop', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, roundId }),
-      });
+      const res = await requestDrop();
       const data = await res.json().catch(() => undefined);
 
       if (!res.ok || !data?.ok || !data.round) {
@@ -197,14 +301,14 @@ export function usePlinkoGame({ username, geometryRef }: UsePlinkoGameOptions) {
       const timer = setTimeout(() => settleBall(ball), ball.anim.totalMs + 60);
       timersRef.current.set(ball.id, timer);
     } catch {
-      addBalance(DROP_BET); // network error — refund
+      addBalance(DROP_BET); // network error on both attempts — refund
       setError('Network error — the bet was refunded.');
     } finally {
       inFlightRef.current -= 1;
     }
   }, [addBalance, deductBalance, geometryRef, settleBall, username]);
 
-  // --- reset (top the shared wallet back up) --------------------------------
+  // --- reset (top the shared wallet back up to the session start) ----------
   const reset = useCallback(async () => {
     try {
       await fetch('/api/plinko/reset', {
@@ -221,9 +325,9 @@ export function usePlinkoGame({ username, geometryRef }: UsePlinkoGameOptions) {
     setRecentRounds([]);
     setOutOfCredits(false);
     setError(null);
-    balanceRef.current = STARTING_BALANCE;
-    setBalance(STARTING_BALANCE);
-  }, [clearAllBalls, setBalance, username]);
+    balanceRef.current = startBalance;
+    setBalance(startBalance);
+  }, [clearAllBalls, setBalance, startBalance, username]);
 
   // --- geometry resync (called by the canvas on resize) --------------------
   const resyncGeometry = useCallback(() => {

@@ -9,7 +9,6 @@ import {
   DROP_BET,
   MULTIPLIERS,
   PEG_RADIUS,
-  STARTING_BALANCE,
   allPegs,
   buildGeometry,
   sampleBallPath,
@@ -126,10 +125,14 @@ function drawFrame(
 }
 
 export default function Plinko() {
-  const { username, balance } = useGameCurrency();
+  const { username, balance, sessionBaseline } = useGameCurrency();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const geometryRef = useRef<BoardGeometry>(buildGeometry(520, 520));
   const [canvasSize, setCanvasSize] = useState({ width: 520, height: 520 });
+
+  // Wallet snapshot from page load — the "even" line for profit and the
+  // top-up target for Reset ($100 players / $50 guests alike).
+  const sessionStart = sessionBaseline ?? balance;
 
   const {
     ballsRef,
@@ -144,7 +147,7 @@ export default function Plinko() {
     reset,
     resyncGeometry,
     clearError,
-  } = usePlinkoGame({ username, geometryRef });
+  } = usePlinkoGame({ username, geometryRef, startBalance: sessionStart });
 
   // Responsive canvas size (same behaviour as the old physics version).
   useEffect(() => {
@@ -193,7 +196,7 @@ export default function Plinko() {
     return () => clearTimeout(timer);
   }, [error, clearError]);
 
-  const profit = balance - STARTING_BALANCE;
+  const profit = balance - sessionStart;
   const lastWinColor =
     lastWin === null
       ? 'text-gray-600'
@@ -217,7 +220,7 @@ export default function Plinko() {
               <div>
                 <p className="text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider">Balance</p>
                 <p
-                  className={`text-2xl sm:text-3xl font-black font-mono ${
+                  className={`text-2xl sm:text-3xl font-black font-mono tabular-nums ${
                     balance < 10 ? 'text-red-400' : balance < 30 ? 'text-yellow-400' : 'text-green-400'
                   }`}
                 >
@@ -227,7 +230,7 @@ export default function Plinko() {
               <div className="text-right">
                 <p className="text-gray-500 text-[10px] sm:text-xs uppercase tracking-wider">Profit</p>
                 <p
-                  className={`text-lg sm:text-xl font-bold font-mono ${
+                  className={`text-lg sm:text-xl font-bold font-mono tabular-nums ${
                     profit > 0 ? 'text-green-400' : profit < 0 ? 'text-red-400' : 'text-gray-400'
                   }`}
                 >
@@ -244,15 +247,15 @@ export default function Plinko() {
           <div className="grid grid-cols-3 gap-2 sm:gap-3">
             <div className="bg-dark-card/90 rounded-lg p-2 sm:p-3 text-center border border-green-500/10">
               <p className="text-gray-500 text-[10px] sm:text-xs">Drops</p>
-              <p className="text-white font-bold text-base sm:text-lg">{totalDrops}</p>
+              <p className="text-white font-bold text-base sm:text-lg tabular-nums">{totalDrops}</p>
             </div>
             <div className="bg-dark-card/90 rounded-lg p-2 sm:p-3 text-center border border-green-500/10">
               <p className="text-gray-500 text-[10px] sm:text-xs">Cost</p>
-              <p className="text-cyan-400 font-bold text-base sm:text-lg">{DROP_BET}</p>
+              <p className="text-cyan-400 font-bold text-base sm:text-lg tabular-nums">{DROP_BET}</p>
             </div>
             <div className="bg-dark-card/90 rounded-lg p-2 sm:p-3 text-center border border-green-500/10">
               <p className="text-gray-500 text-[10px] sm:text-xs">Last Win</p>
-              <p className={`font-bold text-base sm:text-lg ${lastWinColor}`}>
+              <p className={`font-bold text-base sm:text-lg tabular-nums ${lastWinColor}`}>
                 {lastWin !== null ? `+${lastWin}` : '—'}
               </p>
             </div>
@@ -290,7 +293,7 @@ export default function Plinko() {
               disabled={!canDrop}
               className={`w-full font-bold py-2.5 sm:py-3 px-4 sm:px-6 rounded-xl transition-all flex items-center justify-center gap-2 text-sm sm:text-base ${
                 canDrop
-                  ? 'bg-linear-to-r from-green-500 to-cyan-500 text-black hover:opacity-90 neon-glow cursor-pointer'
+                  ? 'bg-linear-to-r from-green-500 to-emerald-700 text-black hover:opacity-90 neon-glow cursor-pointer'
                   : 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700'
               }`}
             >

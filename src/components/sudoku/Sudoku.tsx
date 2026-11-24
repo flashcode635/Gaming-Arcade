@@ -1,6 +1,7 @@
 // Sudoku.tsx
 'use client';
 
+import { useEffect, useRef } from 'react';
 import {
   ResetIcon,
   UndoIcon,
@@ -10,7 +11,8 @@ import {
   PlayIcon,
 } from '../../assets/svg/Icons';
 import { formatTime, MAX_ERRORS, type Difficulty } from './sudokuLogic';
-import { useSudokuGame, SudokuGame } from './useSudokuGame';
+import { useSudokuGame, SudokuGame, SUDOKU_WIN_PAYOUT } from './useSudokuGame';
+import { useGameCurrency } from '../../context/GameCurrencyContext';
 
 const timerColor = (t: number) =>
   t <= 60 ? 'text-red-400 animate-pulse' : t <= 120 ? 'text-yellow-400' : 'text-green-400';
@@ -109,14 +111,16 @@ function NumberPad({ game, desktop }: { game: SudokuGame; desktop?: boolean }) {
 }
 
 function DifficultyButtons({ game }: { game: SudokuGame }) {
-  const { difficulty, startNewGame } = game;
+  const { difficulty, startNewGame, canStartNewGame } = game;
   return (
     <div className="flex gap-1 sm:gap-2">
       {(['easy', 'medium', 'hard'] as const).map(d => (
         <button
           key={d}
           onClick={() => startNewGame(d)}
-          className={`px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
+          disabled={!canStartNewGame && difficulty !== d}
+          title={canStartNewGame ? undefined : 'Need $1 to start a new game'}
+          className={`px-2 sm:px-3 py-1 min-h-11 sm:min-h-0 rounded-lg text-xs sm:text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
             difficulty === d
               ? 'bg-green-500 text-black'
               : `bg-transparent hover:bg-emerald-900/20 text-gray-400
@@ -143,6 +147,7 @@ function Controls({
   const {
     undo, history, toggleNotesMode, notesMode, eraseSelectedCell,
     togglePause, isPaused, startNewGame, difficulty, won, timeUp, gameOver,
+    canStartNewGame,
   } = game;
 
   const btnClass = compact ? 'control-button' : 'desktop-control-button';
@@ -179,8 +184,9 @@ const svgSize= "w-6 h-6";
       {!mobileActionsOnly && (
         <button
           onClick={() => startNewGame(difficulty)}
-          className={`${btnClass} bg-linear-to-r from-green-500 to-cyan-500 text-black`}
-          title="New Game"
+          disabled={!canStartNewGame}
+          title={canStartNewGame ? 'New Game (-$1)' : 'Need $1 to start a new game'}
+          className={`${btnClass} bg-linear-to-r from-green-500 to-emerald-700 text-black disabled:opacity-40 disabled:cursor-not-allowed`}
           aria-label="New Game"
         >
           <ResetIcon className={svgSize} />
@@ -191,7 +197,7 @@ const svgSize= "w-6 h-6";
 }
 
 function BoardOverlay({ game }: { game: SudokuGame }) {
-  const { isPaused, togglePause, gameOver, startNewGame, difficulty } = game;
+  const { isPaused, togglePause, gameOver, startNewGame, difficulty, canStartNewGame } = game;
 
   if (isPaused && !gameOver) {
     return (
@@ -200,7 +206,7 @@ function BoardOverlay({ game }: { game: SudokuGame }) {
           <p className="text-xl font-bold text-yellow-400">Game is Paused</p>
           <button
             onClick={togglePause}
-            className="mt-3 flex items-center gap-2 rounded-lg bg-yellow-500 px-5 py-2 text-sm font-bold text-black hover:bg-yellow-400"
+            className="mt-3 flex items-center min-h-11 gap-2 rounded-lg bg-yellow-500 px-5 py-2 text-sm font-bold text-black hover:bg-yellow-400"
           >
             <PlayIcon className="w-4 h-4" /> Resume
           </button>
@@ -217,9 +223,10 @@ function BoardOverlay({ game }: { game: SudokuGame }) {
           <p className="mt-1 text-sm text-gray-400">You reached {MAX_ERRORS} errors</p>
           <button
             onClick={() => startNewGame(difficulty)}
-            className="mt-3 rounded-lg bg-red-500 px-5 py-2 text-sm font-bold text-black hover:bg-red-400"
+            disabled={!canStartNewGame}
+            className="mt-3 inline-flex items-center min-h-11 rounded-lg bg-red-500 px-5 py-2 text-sm font-bold text-black hover:bg-red-400 disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Try Again
+            {canStartNewGame ? 'Try Again (-$1)' : 'Out of Credits'}
           </button>
         </div>
       </div>
@@ -233,6 +240,7 @@ function BoardOverlay({ game }: { game: SudokuGame }) {
 
 export default function Sudoku() {
   const game = useSudokuGame();
+  const { addBalance } = useGameCurrency();
   const {
     board,
     timer,
@@ -245,7 +253,21 @@ export default function Sudoku() {
     isPaused,
     startNewGame,
     difficulty,
+    canStartNewGame,
   } = game;
+
+  // "Solve to win" → +$5, credited exactly once per solved game.
+  const paidRef = useRef(false);
+  useEffect(() => {
+    if (won) {
+      if (!paidRef.current) {
+        paidRef.current = true;
+        addBalance(SUDOKU_WIN_PAYOUT);
+      }
+    } else {
+      paidRef.current = false;
+    }
+  }, [won, addBalance]);
 
   if (board.length === 0) return null;
 
@@ -261,14 +283,16 @@ export default function Sudoku() {
           <div className="flex items-center justify-between mb-3 gap-1.5">
             <div className="text-center">
               <p className="text-gray-500 text-[10px]">Time</p>
-              <p className={`text-base font-mono font-bold ${timerColor(timer)}`}>
+              <p className={`text-base font-mono font-bold tabular-nums ${timerColor(timer)}`}>
                 {formatTime(timer)}
               </p>
             </div>
             <select
               value={difficulty}
               onChange={event => startNewGame(event.target.value as Difficulty)}
-              className="h-9 rounded-lg border border-green-500/30 bg-dark-surface px-2 text-xs font-semibold text-green-400 outline-none"
+              disabled={!canStartNewGame}
+              title={canStartNewGame ? undefined : 'Need $1 to start a new game'}
+              className="h-9 rounded-lg border border-green-500/30 bg-dark-surface px-2 text-xs font-semibold text-green-400 outline-none disabled:opacity-40"
               aria-label="Difficulty"
             >
               <option value="easy">Easy</option>
@@ -277,12 +301,12 @@ export default function Sudoku() {
             </select>
             <div className="text-center">
               <p className="text-gray-500 text-[10px]">Errors</p>
-              <p className="text-base font-bold text-red-400">{errorCount} / {MAX_ERRORS}</p>
+              <p className="text-base font-bold text-red-400 tabular-nums">{errorCount} / {MAX_ERRORS}</p>
             </div>
             <button
               onClick={togglePause}
               disabled={won || timeUp || gameOver}
-              className="control-button w-10 min-h-10"
+              className="control-button w-11 min-h-11"
               title={isPaused ? 'Resume' : 'Pause'}
               aria-label={isPaused ? 'Resume' : 'Pause'}
             >
@@ -290,8 +314,9 @@ export default function Sudoku() {
             </button>
             <button
               onClick={() => startNewGame(difficulty)}
-              className="control-button w-10 min-h-10 bg-linear-to-r from-green-500 to-cyan-500 text-black"
-              title="Restart"
+              disabled={!canStartNewGame}
+              className="control-button w-11 min-h-11 bg-linear-to-r from-green-500 to-emerald-700 text-black disabled:opacity-40 disabled:cursor-not-allowed"
+              title={canStartNewGame ? 'Restart (-$1)' : 'Need $1 to start a new game'}
               aria-label="Restart"
             >
               <ResetIcon className="w-5 h-5" />
@@ -316,7 +341,7 @@ export default function Sudoku() {
           )}
           {won && (
             <div className="mt-4 text-center p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
-              <p className="text-green-400 text-xl font-bold">Congratulations!</p>
+              <p className="text-green-400 text-xl font-bold tabular-nums">Congratulations! +${SUDOKU_WIN_PAYOUT.toFixed(2)}</p>
               <p className="text-green-300 text-sm">Solved with {formatTime(timer)} remaining</p>
             </div>
           )}
@@ -340,13 +365,13 @@ export default function Sudoku() {
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-xl border border-green-500/20 bg-dark-card/90 p-3 text-center">
                 <p className="text-xs text-gray-500">Time Left</p>
-                <p className={`mt-1 font-mono text-2xl font-bold ${timerColor(timer)}`}>
+                <p className={`mt-1 font-mono text-2xl font-bold tabular-nums ${timerColor(timer)}`}>
                   {formatTime(timer)}
                 </p>
               </div>
               <div className="rounded-xl border border-green-500/20 bg-dark-card/90 p-3 text-center">
                 <p className="text-xs text-gray-500">Mistakes</p>
-                <p className="mt-1 text-2xl font-bold text-red-300">
+                <p className="mt-1 text-2xl font-bold text-red-300 tabular-nums">
                   {errorCount} / {MAX_ERRORS}</p>
               </div>
             </div>
@@ -360,8 +385,8 @@ export default function Sudoku() {
               </p>
             )}
             {won && (
-              <p className="rounded-xl border border-green-500/30 bg-green-500/10 p-3 text-center text-sm font-bold text-green-400">
-                Congratulations! Solved.
+              <p className="rounded-xl border border-green-500/30 bg-green-500/10 p-3 text-center text-sm font-bold text-green-400 tabular-nums">
+                Congratulations! +${SUDOKU_WIN_PAYOUT.toFixed(2)}
               </p>
             )}
           </aside>

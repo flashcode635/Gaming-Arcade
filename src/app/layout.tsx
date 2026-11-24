@@ -30,6 +30,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  // Let the page paint under the notch / Dynamic Island; env(safe-area-inset-*)
+  // paddings in globals.css keep real content clear of it.
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

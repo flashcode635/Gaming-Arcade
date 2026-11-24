@@ -10,45 +10,80 @@
   --font-sans: var(--font-inter), system-ui, sans-serif;
   --font-display: var(--font-space-grotesk), system-ui, sans-serif;
   --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+  /* shadcn primitives (dialog/command menus) read these tokens; utilities
+     compile to var(--color-*), so the body.light-mode overrides below work. */
+  --color-background: #000000;
+  --color-foreground: #ffffff;
+  --color-popover: #0a0f0a;
+  --color-popover-foreground: #ffffff;
+  --color-muted-foreground: #a1a1aa;
+  --color-accent: rgba(0, 255, 136, 0.14);
+  --color-accent-foreground: #00ff88;
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-ring: rgba(0, 255, 136, 0.5);
 }
 
 body {
   background: #000000;
   min-height: 100vh;
   isolation: isolate;
-  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-family: "Segoe UI", system-ui, sans-serif;
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
   overscroll-behavior: none;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
 
 /* ============ DARK MODE (Default) ============ */
 .neon-glow {
-  box-shadow: 0 0 5px rgba(0, 255, 136, 0.5), 0 0 20px rgba(0, 255, 136, 0.3), 0 0 40px rgba(0, 255, 136, 0.1);
+  box-shadow:
+    0 0 5px rgba(0, 255, 136, 0.5),
+    0 0 20px rgba(0, 255, 136, 0.3),
+    0 0 40px rgba(0, 255, 136, 0.1);
 }
 
 .neon-glow-cyan {
-  box-shadow: 0 0 5px rgba(0, 229, 255, 0.5), 0 0 20px rgba(0, 229, 255, 0.3), 0 0 40px rgba(0, 229, 255, 0.1);
+  box-shadow:
+    0 0 5px rgba(0, 229, 255, 0.5),
+    0 0 20px rgba(0, 229, 255, 0.3),
+    0 0 40px rgba(0, 229, 255, 0.1);
 }
 
 .neon-text {
-  text-shadow: 0 0 7px rgba(0, 255, 136, 0.7), 0 0 20px rgba(0, 255, 136, 0.4);
+  text-shadow:
+    0 0 7px rgba(0, 255, 136, 0.7),
+    0 0 20px rgba(0, 255, 136, 0.4);
 }
 
 .neon-text-cyan {
-  text-shadow: 0 0 7px rgba(0, 229, 255, 0.7), 0 0 20px rgba(0, 229, 255, 0.4);
+  text-shadow:
+    0 0 7px rgba(0, 229, 255, 0.7),
+    0 0 20px rgba(0, 229, 255, 0.4);
 }
 
 /* ============ LIGHT MODE ============ */
 body.light-mode {
+  --color-background: #f0f7f0;
+  --color-foreground: #1a1a1a;
+  --color-popover: #e8f5e9;
+  --color-popover-foreground: #1b5e20;
+  --color-muted-foreground: #555555;
+  --color-accent: rgba(0, 128, 0, 0.1);
+  --color-accent-foreground: #2e7d32;
+  --color-border: rgba(0, 128, 0, 0.2);
+  --color-ring: rgba(0, 128, 0, 0.4);
   background: #f0f7f0;
   color: #1a1a1a;
 }
 
 /* Card backgrounds - greenish shades */
 body.light-mode .bg-dark-card,
-body.light-mode .bg-dark-card\/90 {
+body.light-mode .bg-dark-card\/90,
+body.light-mode .bg-dark-card\/70,
+body.light-mode .bg-dark-card\/60,
+body.light-mode .bg-dark-card\/48 {
   background: #e8f5e9 !important;
   backdrop-filter: none !important;
 }
@@ -59,14 +94,68 @@ body.light-mode .bg-dark-surface {
 
 body.light-mode .bg-black\/50,
 body.light-mode .bg-black\/30,
-body.light-mode .bg-black\/60,
-body.light-mode .bg-black\/80 {
+body.light-mode .bg-black\/60 {
   background: rgba(232, 245, 233, 0.95) !important;
 }
 
 /* Text colors - keep dark */
 body.light-mode .text-white {
   color: #1b5e20 !important;
+}
+
+/* Tailwind zinc utilities used across the arcade chrome need real contrast
+   on the light palette (light-mode is scoped to /arcade routes). */
+body.light-mode .text-zinc-200 {
+  color: #26332a !important;
+}
+
+body.light-mode .text-zinc-300 {
+  color: #33443a !important;
+}
+
+body.light-mode .text-zinc-400 {
+  color: #44554a !important;
+}
+
+body.light-mode .text-zinc-500 {
+  color: #56665b !important;
+}
+
+body.light-mode .text-zinc-600 {
+  color: #66766b !important;
+}
+
+body.light-mode .text-zinc-700 {
+  color: #84948a !important;
+}
+
+body.light-mode .text-emerald-300 {
+  color: #047857 !important;
+}
+
+body.light-mode .text-emerald-400 {
+  color: #059669 !important;
+}
+
+body.light-mode .text-amber-300 {
+  color: #b45309 !important;
+}
+
+body.light-mode .text-red-400 {
+  color: #b91c1c !important;
+}
+
+/* Hairline borders and translucent fills of the lobby chrome */
+body.light-mode .border-white\/\[0\.06\],
+body.light-mode .border-white\/\[0\.07\],
+body.light-mode .border-white\/\[0\.08\] {
+  border-color: rgba(0, 128, 0, 0.13) !important;
+}
+
+body.light-mode .bg-white\/\[0\.02\],
+body.light-mode .bg-white\/\[0\.025\],
+body.light-mode .bg-white\/\[0\.03\] {
+  background-color: rgba(0, 128, 0, 0.04) !important;
 }
 
 body.light-mode .text-gray-400 {
@@ -106,7 +195,7 @@ body.light-mode .card-hover:hover {
 
 /* Grid background - softer in light mode */
 body.light-mode .grid-bg {
-  background-image: 
+  background-image:
     linear-gradient(rgba(0, 128, 0, 0.04) 1px, transparent 1px),
     linear-gradient(90deg, rgba(0, 128, 0, 0.04) 1px, transparent 1px);
   background-size: 50px 50px;
@@ -283,8 +372,8 @@ body.light-mode .from-green-500 {
   --tw-gradient-from: #43a047;
 }
 
-body.light-mode .to-cyan-500 {
-  --tw-gradient-to: #00897b;
+body.light-mode .to-emerald-700 {
+  --tw-gradient-to: #047857;
 }
 
 /* Game board backgrounds */
@@ -329,6 +418,54 @@ body.light-mode ::-webkit-scrollbar-thumb {
 }
 
 /* ============ COMMON STYLES ============ */
+/* Balanced text: headings wrap without lonely last lines, paragraphs avoid
+   single-word rivers. Purely presentational, ignored by old browsers. */
+h1,
+h2,
+h3,
+h4 {
+  text-wrap: balance;
+}
+
+p,
+li {
+  text-wrap: pretty;
+}
+
+/* View transitions (theme cross-fade): keep it snappy, honor reduced motion. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 200ms;
+  animation-timing-function: ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
+
+/* Cross-document view transitions for MPA-style navigations (back/forward,
+   full page loads). Next.js client-side navigations keep their own instant
+   routing; browsers without support ignore the rule entirely. */
+@view-transition {
+  navigation: auto;
+}
+
+/* Continuous corners (Apple-style squircle). Drawn only by Chromium browsers
+   that support corner-shape; every other browser ignores it and keeps the
+   plain border-radius. Pills/circles (rounded-full) are left untouched. */
+@supports (corner-shape: squircle) {
+  .rounded-md,
+  .rounded-lg,
+  .rounded-xl,
+  .rounded-2xl,
+  .rounded-3xl {
+    corner-shape: squircle;
+  }
+}
+
 .card-hover {
   transition: all 0.3s ease;
 }
@@ -338,8 +475,13 @@ body.light-mode ::-webkit-scrollbar-thumb {
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
 .animate-float {
@@ -347,16 +489,35 @@ body.light-mode ::-webkit-scrollbar-thumb {
 }
 
 @keyframes pulse-neon {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }
 
 .animate-pulse-neon {
   animation: pulse-neon 2s ease-in-out infinite;
 }
 
+/* Reduced motion: one global kill-switch for every decorative animation and
+   transition (float, pulse-neon, card-hover, spin-slow, flip cards…). Users
+   who ask the OS for less motion get a calm, static arcade. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 .grid-bg {
-  background-image: 
+  background-image:
     linear-gradient(rgba(0, 255, 136, 0.02) 1px, transparent 1px),
     linear-gradient(90deg, rgba(0, 229, 255, 0.02) 1px, transparent 1px);
   background-size: 50px 50px;
@@ -598,8 +759,15 @@ body.light-mode ::-webkit-scrollbar-thumb {
 }
 
 @keyframes card-match-pulse {
-  0%, 100% { box-shadow: 0 0 5px rgba(0, 255, 136, 0.3); }
-  50% { box-shadow: 0 0 20px rgba(0, 255, 136, 0.6), 0 0 40px rgba(0, 229, 255, 0.3); }
+  0%,
+  100% {
+    box-shadow: 0 0 5px rgba(0, 255, 136, 0.3);
+  }
+  50% {
+    box-shadow:
+      0 0 20px rgba(0, 255, 136, 0.6),
+      0 0 40px rgba(0, 229, 255, 0.3);
+  }
 }
 
 .flip-card-inner.matched {
@@ -639,15 +807,17 @@ input[type="range"]::-moz-range-thumb {
 
 /* Mobile optimizations */
 @media (max-width: 640px) {
-  input, select, textarea {
+  input,
+  select,
+  textarea {
     font-size: 16px !important;
   }
-  
+
   button {
     min-height: 44px;
     min-width: 44px;
   }
-  
+
   .card-hover:hover {
     transform: translateY(-2px) scale(1.01);
   }
@@ -656,7 +826,7 @@ input[type="range"]::-moz-range-thumb {
     width: 24px;
     height: 24px;
   }
-  
+
   input[type="range"]::-moz-range-thumb {
     width: 24px;
     height: 24px;
@@ -665,10 +835,17 @@ input[type="range"]::-moz-range-thumb {
 
 @supports (padding: max(0px)) {
   body {
+    padding-top: max(0px, env(safe-area-inset-top));
     padding-left: max(0px, env(safe-area-inset-left));
     padding-right: max(0px, env(safe-area-inset-right));
     padding-bottom: max(0px, env(safe-area-inset-bottom));
   }
+}
+
+/* Sticky headers park just below the notch / Dynamic Island instead of under
+   it (viewport-fit=cover in layout.tsx extends the page behind them). */
+.sticky-safe-top {
+  top: max(0px, env(safe-area-inset-top));
 }
 
 html,
@@ -678,9 +855,173 @@ body {
   width: 100%;
   height: max-content;
   color: #ffffff;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
 body.light-mode {
   background-color: #f0f7f0;
   color: #1a1a1a;
+}
+
+/* ===== Premium arcade lobby system ===== */
+.arcade-header-shell {
+  /* background: linear-gradient(180deg, rgba(17, 24, 19, 0.385), rgba(9, 13, 10, 0.856)); */
+  /* border: 1px solid rgba(255, 255, 255, 0.055); */
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.18);
+}
+.arcade-topbar-shell {
+  background: rgba(4, 7, 5, 0.86);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+body.light-mode .arcade-topbar-shell {
+  background: rgba(240, 247, 240, 0.92);
+  border-color: rgba(0, 128, 0, 0.12);
+}
+.arcade-player-card {
+  background: linear-gradient(160deg, rgba(0, 255, 136, 0.055), rgba(10, 15, 10, 0.92) 48%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+}
+body.light-mode .arcade-player-card {
+  background: linear-gradient(160deg, #eaf7ec, #dcefe0);
+  border-color: rgba(0, 128, 0, 0.14);
+  box-shadow: 0 16px 40px rgba(0, 64, 0, 0.08);
+}
+.arcade-search {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+.arcade-search:hover {
+  border-color: rgba(0, 255, 136, 0.18);
+  background: rgba(0, 255, 136, 0.025);
+}
+.wallet-chip {
+  border: 1px solid rgba(0, 255, 136, 0.12);
+  background: rgba(0, 255, 136, 0.035);
+}
+.wallet-mark {
+  border: 1px solid rgba(0, 255, 136, 0.12);
+  background: rgba(0, 255, 136, 0.07);
+}
+.arcade-secondary-btn {
+  color: #b8c0ba;
+  border: 1px solid rgba(255, 255, 255, 0.085);
+  background: rgba(255, 255, 255, 0.025);
+}
+.arcade-secondary-btn:hover {
+  color: #f4f8f5;
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+.arcade-cta {
+  color: #eaf4ff;
+  background: linear-gradient(135deg, #1679ed, #2461d4);
+  box-shadow: 0 5px 18px rgba(20, 103, 224, 0.16);
+}
+.arcade-cta:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 7px 22px rgba(20, 103, 224, 0.24);
+  transform: translateY(-1px);
+}
+.profile-trigger {
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.025);
+}
+.profile-trigger:hover {
+  background: rgba(255, 255, 255, 0.055);
+  border-color: rgba(0, 255, 136, 0.18);
+}
+.profile-avatar {
+  background: linear-gradient(145deg, rgba(0, 255, 136, 0.12), rgba(0, 255, 136, 0.035));
+  border: 1px solid rgba(0, 255, 136, 0.2);
+}
+.profile-menu {
+  background: #101611 !important;
+  border: 1px solid rgba(255, 255, 255, 0.085) !important;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.48) !important;
+}
+.profile-signup {
+  color: #eaf4ff;
+  background: linear-gradient(135deg, #1679ed, #2461d4);
+  border-radius: 0.5rem;
+  padding: 0.4rem 0.55rem;
+}
+.profile-signup:hover {
+  filter: brightness(1.08);
+}
+.arcade-meta-pill {
+  background: rgba(0, 255, 136, 0.035);
+  border: 1px solid rgba(0, 255, 136, 0.11);
+  color: #8f9d93;
+}
+.arcade-game-card {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.012) 45%, rgba(0, 0, 0, 0.3));
+  border-color: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  min-height: 226px;
+}
+.arcade-game-card:hover {
+  border-color: rgba(0, 255, 136, 0.18);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.24), 0 0 24px rgba(0, 255, 136, 0.025);
+}
+
+body.light-mode .arcade-header-shell {
+  background: rgba(232, 245, 233, 0.78);
+  border-color: rgba(0, 128, 0, 0.1);
+  box-shadow: 0 12px 32px rgba(0, 128, 0, 0.05);
+}
+body.light-mode .arcade-search,
+body.light-mode .profile-trigger {
+  background: rgba(0, 128, 0, 0.025);
+  border-color: rgba(0, 128, 0, 0.12);
+}
+body.light-mode .wallet-chip,
+body.light-mode .wallet-mark,
+body.light-mode .arcade-meta-pill {
+  background: rgba(0, 128, 0, 0.045);
+  border-color: rgba(0, 128, 0, 0.12);
+}
+body.light-mode .arcade-game-card {
+  background: linear-gradient(145deg, #f2faf3, #e6f3e8);
+  border-color: rgba(0, 128, 0, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 128, 0, 0.035);
+}
+body.light-mode .arcade-game-card:hover {
+  border-color: rgba(0, 128, 0, 0.2);
+}
+body.light-mode .profile-menu {
+  background: #eff8f0 !important;
+  border-color: rgba(0, 128, 0, 0.13) !important;
+  box-shadow: 0 20px 50px rgba(0, 64, 0, 0.12) !important;
+}
+body.light-mode .arcade-cta {
+  color: #f5f9ff !important;
+  background: linear-gradient(135deg, #1679ed, #2461d4) !important;
+}
+body.light-mode .arcade-secondary-btn {
+  color: #426047;
+  background: rgba(0, 128, 0, 0.035);
+  border-color: rgba(0, 128, 0, 0.12);
+}
+
+/* Inline per-game accent colors (icons, "Play now", payout chips) are bright
+   neon — dim them so they keep contrast on the light arcade palette. */
+body.light-mode .arcade-accent {
+  filter: brightness(0.62) saturate(1.15);
+}
+
+body.light-mode .arcade-icon-tile {
+  background: rgba(0, 128, 0, 0.085) !important;
+  color: #047857 !important;
+  box-shadow: inset 0 0 0 1px rgba(0, 128, 0, 0.18) !important;
+}
+body.light-mode .arcade-payout-chip {
+  background: rgba(0, 128, 0, 0.08) !important;
+  color: #047857 !important;
+}
+body.light-mode .arcade-game-wallet {
+  background: rgba(0, 128, 0, 0.07) !important;
+  border-color: rgba(0, 128, 0, 0.2) !important;
+  color: #047857 !important;
 }

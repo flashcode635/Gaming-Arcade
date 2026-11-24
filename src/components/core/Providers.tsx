@@ -6,6 +6,8 @@ import { ThemeProvider } from "@/context/ThemeContext";
 import { SettingsProvider } from "@/context/settingContext";
 import EnhancedBackground from "@/components/core/enhancedBg";
 import GameNav from "@/components/core/GameNav";
+import CommandMenu from "@/components/core/CommandMenu";
+import { Toaster } from "@/components/ui/sonner";
 
 export default function Providers({ children }: { children: ReactNode }) {
   return (
@@ -16,6 +18,8 @@ export default function Providers({ children }: { children: ReactNode }) {
             <EnhancedBackground />
             <GameNav />
             {children}
+            <CommandMenu />
+            <Toaster position="bottom-right" />
           </div>
         </ThemeProvider>
       </GameCurrencyProvider>

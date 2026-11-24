@@ -8,6 +8,9 @@ type Cell = 'X' | 'O' | null;
 type Board = Cell[];
 type GameMode = 'pvp' | 'ai';
 const GAME_COST = 1;
+/** Registry payout promise: "2x per win", "Draw = refund". */
+const WIN_PAYOUT = 2 * GAME_COST;
+const DRAW_REFUND = GAME_COST;
 
 const WINNING_COMBOS = [
   [0, 1, 2], [3, 4, 5], [6, 7, 8],
@@ -107,8 +110,12 @@ export default function TicTacToe() {
     if (newWinner) {
       setWinLine(findWinLine(newBoard));
       setScores(prev => ({ ...prev, [newWinner]: prev[newWinner as 'X' | 'O'] + 1 }));
+      // 2x per win — any human winner (X here, or either side in PvP).
+      addBalance(WIN_PAYOUT);
     } else if (newDraw) {
       setScores(prev => ({ ...prev, draws: prev.draws + 1 }));
+      // Draw = refund.
+      addBalance(DRAW_REFUND);
     }
 
     setIsXTurn(!isXTurn);
@@ -125,8 +132,10 @@ export default function TicTacToe() {
           if (aiWinner) {
             setWinLine(findWinLine(aiBoard));
             setScores(prev => ({ ...prev, O: prev.O + 1 }));
+            // The bot won — the round's stake stays lost.
           } else if (aiDraw) {
             setScores(prev => ({ ...prev, draws: prev.draws + 1 }));
+            addBalance(DRAW_REFUND); // draw = refund
           }
           setIsXTurn(true);
         }
@@ -149,8 +158,12 @@ export default function TicTacToe() {
   };
 
   const getStatus = () => {
-    if (winner) return `${winner} Wins! 🎉`;
-    if (isDraw) return "It's a Draw! 🤝";
+    if (winner) {
+      // The bot winning pays nothing; every other win pays 2x.
+      const paid = !(gameMode === 'ai' && winner === 'O');
+      return `${winner} Wins! 🎉${paid ? ` +$${WIN_PAYOUT}` : ''}`;
+    }
+    if (isDraw) return `It's a Draw! 🤝 +$${DRAW_REFUND} refunded`;
     if (gameMode === 'ai') {
       return isXTurn ? "Your Turn (X)" : "AI Thinking...";
     }
@@ -163,7 +176,7 @@ export default function TicTacToe() {
         <div className="flex gap-2 mb-4 justify-center">
           <button
             onClick={() => { setGameMode('ai'); resetAll(); }}
-            className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
+            className={`inline-flex items-center min-h-11 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
               gameMode === 'ai' ? 'bg-cyan-500 text-black' : 'bg-dark-surface text-gray-400 border border-cyan-500/20'
             }`}
           >
@@ -171,7 +184,7 @@ export default function TicTacToe() {
           </button>
           <button
             onClick={() => { setGameMode('pvp'); resetAll(); }}
-            className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
+            className={`inline-flex items-center min-h-11 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
               gameMode === 'pvp' ? 'bg-cyan-500 text-black' : 'bg-dark-surface text-gray-400 border border-cyan-500/20'
             }`}
           >
@@ -182,15 +195,15 @@ export default function TicTacToe() {
         <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4 sm:mb-6">
           <div className="bg-dark-surface rounded-lg sm:rounded-xl p-2 sm:p-3 text-center border border-green-500/20">
             <p className="text-green-400 font-bold text-sm sm:text-lg">X</p>
-            <p className="text-white font-bold text-xl sm:text-2xl">{scores.X}</p>
+            <p className="text-white font-bold text-xl sm:text-2xl tabular-nums">{scores.X}</p>
           </div>
           <div className="bg-dark-surface rounded-lg sm:rounded-xl p-2 sm:p-3 text-center border border-gray-500/20">
             <p className="text-gray-400 font-bold text-sm sm:text-lg">Draw</p>
-            <p className="text-white font-bold text-xl sm:text-2xl">{scores.draws}</p>
+            <p className="text-white font-bold text-xl sm:text-2xl tabular-nums">{scores.draws}</p>
           </div>
           <div className="bg-dark-surface rounded-lg sm:rounded-xl p-2 sm:p-3 text-center border border-cyan-500/20">
             <p className="text-cyan-400 font-bold text-sm sm:text-lg">O</p>
-            <p className="text-white font-bold text-xl sm:text-2xl">{scores.O}</p>
+            <p className="text-white font-bold text-xl sm:text-2xl tabular-nums">{scores.O}</p>
           </div>
         </div>
 
@@ -226,7 +239,7 @@ export default function TicTacToe() {
           <button
             onClick={resetGame}
             disabled={balance < GAME_COST}
-            className="flex-1 bg-linear-to-r from-green-500 to-cyan-500 text-black font-bold py-2.5 sm:py-3 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 bg-linear-to-r from-green-500 to-emerald-700 text-black font-bold py-2.5 sm:py-3 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ResetIcon className="w-4 h-4 sm:w-5 sm:h-5" />
             {balance >= GAME_COST ? `New Round (-$${GAME_COST})` : 'Not Enough Credits'}

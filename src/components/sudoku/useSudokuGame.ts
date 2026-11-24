@@ -1,7 +1,7 @@
 // useSudokuGame.ts
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Board,
   CellNotes,
@@ -11,8 +11,14 @@ import {
   DIFFICULTY_TIME_LIMITS,
   generatePuzzle,
 } from './sudokuLogic';
+import { useGameCurrency } from '@/context/GameCurrencyContext';
+
+/** Registry promise: every new game costs $1, solving pays $5. */
+const SUDOKU_COST = 1;
+export const SUDOKU_WIN_PAYOUT = 5;
 
 export function useSudokuGame(initialDifficulty: Difficulty = 'medium') {
+  const { balance, deductBalance } = useGameCurrency();
   const [board, setBoard] = useState<Board>([]);
   const [solution, setSolution] = useState<number[][]>([]);
   const [given, setGiven] = useState<boolean[][]>([]);
@@ -24,15 +30,27 @@ export function useSudokuGame(initialDifficulty: Difficulty = 'medium') {
   const [history, setHistory] = useState<UndoSnapshot[]>([]);
   const [won, setWon] = useState(false);
   const [timeUp, setTimeUp] = useState(false);
-  const [gameOver, setGameOver] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [difficulty, setDifficulty] = useState<Difficulty>(initialDifficulty);
   const [timer, setTimer] = useState(DIFFICULTY_TIME_LIMITS[initialDifficulty]);
   const [isRunning, setIsRunning] = useState(false);
 
+  // Derived instead of stored: three mistakes is always exactly game over —
+  // no effect needed to "sync" it.
+  const gameOver = errorCount >= MAX_ERRORS;
   const isPlayable = !won && !timeUp && !gameOver && !isPaused;
 
-  const startNewGame = useCallback((diff: Difficulty) => {
+  // Context functions are re-created on every provider render — keep the
+  // latest one in a ref so startNewGame stays referentially stable (the mount
+  // effect below must not re-run on every render).
+  const deductRef = useRef(deductBalance);
+  useEffect(() => {
+    deductRef.current = deductBalance;
+  }, [deductBalance]);
+
+  /** User-initiated games cost $1; the auto-generated first game is free. */
+  const startNewGame = useCallback((diff: Difficulty, opts?: { free?: boolean }) => {
+    if (!opts?.free && !deductRef.current(SUDOKU_COST)) return;
     const { puzzle, solution: sol } = generatePuzzle(diff);
     setBoard(puzzle);
     setSolution(sol);
@@ -45,15 +63,19 @@ export function useSudokuGame(initialDifficulty: Difficulty = 'medium') {
     setHistory([]);
     setWon(false);
     setTimeUp(false);
-    setGameOver(false);
     setIsPaused(false);
     setDifficulty(diff);
     setTimer(DIFFICULTY_TIME_LIMITS[diff]);
     setIsRunning(true);
   }, []);
 
+  // First puzzle must be generated on the client (random), while the server
+  // renders an empty grid — the documented two-pass pattern. startNewGame
+  // fans out into many setState calls, so the effect-based lint is silenced
+  // for this mount-only generation.
   useEffect(() => {
-    startNewGame(initialDifficulty);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    startNewGame(initialDifficulty, { free: true });
   }, [startNewGame, initialDifficulty]);
 
   // Countdown timer
@@ -73,26 +95,6 @@ export function useSudokuGame(initialDifficulty: Difficulty = 'medium') {
 
     return () => clearInterval(interval);
   }, [isRunning, isPaused, won, timeUp, gameOver]);
-
-  // Game over when error limit reached
-  useEffect(() => {
-    if (errorCount >= MAX_ERRORS) {
-      setGameOver(true);
-      setIsRunning(false);
-    }
-  }, [errorCount]);
-
-  // Win detection
-  useEffect(() => {
-    if (board.length === 0 || solution.length === 0) return;
-    const solved = board.every((row, ri) =>
-      row.every((cell, ci) => cell === solution[ri][ci])
-    );
-    if (solved) {
-      setWon(true);
-      setIsRunning(false);
-    }
-  }, [board, solution]);
 
   const pushHistory = () => {
     setHistory(prev => [
@@ -158,13 +160,24 @@ export function useSudokuGame(initialDifficulty: Difficulty = 'medium') {
 
     if (num !== solution[row][col]) {
       setErrors(prev => new Set(prev).add(key));
-      setErrorCount(prev => prev + 1);
+      const nextErrorCount = errorCount + 1;
+      setErrorCount(nextErrorCount);
+      // Three strikes — the round ends right here (event-driven, no effect).
+      if (nextErrorCount >= MAX_ERRORS) setIsRunning(false);
     } else {
       setErrors(prev => {
         const next = new Set(prev);
         next.delete(key);
         return next;
       });
+      // Win check lives with the move that can complete the grid.
+      const solved = newBoard.every((row, ri) =>
+        row.every((cell, ci) => cell === solution[ri][ci])
+      );
+      if (solved) {
+        setWon(true);
+        setIsRunning(false);
+      }
     }
   };
 
@@ -281,6 +294,9 @@ export function useSudokuGame(initialDifficulty: Difficulty = 'medium') {
     // state
     board, given, selectedCell, errors, errorCount, notes, notesMode, history,
     won, timeUp, gameOver, isPaused, difficulty, timer, isPlayable, conflictCells,
+    // wallet
+    balance,
+    canStartNewGame: balance >= SUDOKU_COST,
     // actions
     startNewGame, handleCellClick, handleNumberInput, eraseSelectedCell,
     undo, toggleNotesMode, togglePause, handleKeyDown,

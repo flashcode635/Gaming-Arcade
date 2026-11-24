@@ -11,27 +11,31 @@ Every game costs **$1 per turn** from the in-game balance.
 
 | Game | Route | Description | Difficulty |
 | --- | --- | --- | --- |
-| Plinko | [`/plinko`](http://localhost:3000/plinko) | Drop the ball — the server decides the fate, the client replays the path. | Hard |
-| Sudoku | [`/sudoku`](http://localhost:3000/sudoku) | Solve a classic number puzzle. | Medium |
-| Tic-Tac-Toe | [`/tictactoe`](http://localhost:3000/tictactoe) | Play against the AI or a friend. | Easy |
-| Snake | [`/snake`](http://localhost:3000/snake) | Grow the snake and beat your high score. | Medium |
-| Memory Match | [`/memory`](http://localhost:3000/memory) | Match pairs and test your memory. | Easy |
-| Minesweeper | [`/minesweeper`](http://localhost:3000/minesweeper) | Find the gems without hitting a mine. | Hard |
+| Plinko | [`/arcade/plinko`](http://localhost:3000/arcade/plinko) | Drop the ball — the server decides the fate, the client replays the path. | Hard |
+| Sudoku | [`/arcade/sudoku`](http://localhost:3000/arcade/sudoku) | Solve a classic number puzzle. | Medium |
+| Tic-Tac-Toe | [`/arcade/tictactoe`](http://localhost:3000/arcade/tictactoe) | Play against the AI or a friend. | Easy |
+| Snake | [`/arcade/snake`](http://localhost:3000/arcade/snake) | Apples keep spawning until you lose — or cover the whole board to win. | Medium |
+| Memory Match | [`/arcade/memory`](http://localhost:3000/arcade/memory) | Match pairs and test your memory. | Easy |
+| Minesweeper | [`/arcade/minesweeper`](http://localhost:3000/arcade/minesweeper) | Find the gems without hitting a mine. | Hard |
 
 ## Features
 
-- Six playable mini-games from one arcade dashboard
-- Shared starting balance of `$100` with per-turn credit deductions
-- Player welcome area and balance display
+- Product landing page at `/` introducing the arcade
+- Signup/login (MongoDB) redirects straight into the arcade hub at `/arcade`
+- Guest trial mode — play without an account with a fixed `$50` balance
+- Signed-up players start with a `$100` bonus; balances persist in IndexedDB
+- Six playable mini-games from one arcade dashboard with per-turn credit deductions
+- Player name shown in the top bar and game navigation
+- Command menu (`Cmd/Ctrl+K`), shortcut hints, undo toasts, skeleton loaders,
+  view transitions, and other UX polish — all respecting `prefers-reduced-motion`
 - Responsive design for desktop and mobile screens
 - Neon arcade visual system with animated background effects
 - Light and dark theme toggle
-- Client-side game state managed with React Context
 - Type-safe routes and components with TypeScript
 
 ## Tech stack
 
-- [Next.js](https://nextjs.org/) 15 with the App Router
+- [Next.js](https://nextjs.org/) 16 with the App Router
 - React 19
 - TypeScript
 - Tailwind CSS 4
@@ -79,35 +83,33 @@ bun run scripts/mongo-setup.ts
 | Command | Purpose |
 | --- | --- |
 | `npm run dev` | Start the development server on port 3000 |
-| `npm run typecheck` | Run the TypeScript compiler without emitting files |
 | `npm run build` | Create an optimized production build |
 | `npm start` | Serve the production build on port 3000 |
+| `npm run lint` | Run ESLint over the project |
 
 ## Project structure
 
 ```text
 src/
 ├── app/                  # App Router pages, global styles, and API routes
+│   ├── api/auth/         # signup / login / check / balance (MongoDB)
 │   ├── api/plinko/       # drop / state / reset — server-authoritative backend
-│   ├── memory/
-│   ├── minesweeper/
-│   ├── plinko/
-│   ├── snake/
-│   ├── sudoku/
-│   └── tictactoe/
+│   ├── arcade/           # hub at /arcade + games at /arcade/[game]
+│   ├── login/  signup/   # auth screens
+│   └── settings/
 ├── assets/svg/           # Reusable game and interface icons
-├── components/           # Game screens, navigation, background, and providers
-├── context/              # Theme and in-game currency state
+├── components/           # Landing, arcade hub, auth, games, navigation, providers
+├── context/              # Theme and in-game currency state (IndexedDB wallet)
 ├── engine/               # Shared game math (Plinko odds, paths, geometry)
-├── hooks/                # Per-game client controllers
-└── lib/                  # Server-side stores and shared utilities
+├── hooks/                # Per-game client controllers and UX helpers
+└── lib/                  # MongoDB client, IndexedDB stores, shared utilities
 ```
 
 ## Notes
 
-The balance, username, theme, and game sessions currently live in client-side
-React state. There is no backend, authentication, database, or real-money
-payment system; all credits are for gameplay inside the browser.
+Accounts live in MongoDB; wallet balances live in the browser (IndexedDB) with
+server-side Plinko accounting. There is no real-money payment system — all
+credits are virtual and for gameplay inside the browser.
 
 ---
 

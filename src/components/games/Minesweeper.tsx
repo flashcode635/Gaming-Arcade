@@ -200,11 +200,11 @@ export default function Minesweeper() {
           <div className="grid grid-cols-2 gap-2 sm:gap-3">
             <div className="bg-dark-card/90 rounded-lg p-2 sm:p-3 text-center border border-green-500/10">
               <p className="text-gray-500 text-[10px] sm:text-xs">Gems Found</p>
-              <p className="text-white font-bold text-base sm:text-lg">{gemsFound}/{TOTAL_GEMS}</p>
+              <p className="text-white font-bold text-base sm:text-lg tabular-nums">{gemsFound}/{TOTAL_GEMS}</p>
             </div>
             <div className="bg-dark-card/90 rounded-lg p-2 sm:p-3 text-center border border-green-500/10">
               <p className="text-gray-500 text-[10px] sm:text-xs">Per Gem</p>
-              <p className="text-cyan-400 font-bold text-base sm:text-lg">${(gameStarted ? currentBet : betAmount) / 5}</p>
+              <p className="text-cyan-400 font-bold text-base sm:text-lg tabular-nums">${(gameStarted ? currentBet : betAmount) / 5}</p>
             </div>
           </div>
 
@@ -213,7 +213,7 @@ export default function Minesweeper() {
             <div className="relative bg-dark-card/90 rounded-xl p-3 sm:p-4 xl:p-6 border border-green-500/20 space-y-3 sm:space-y-4 xl:space-y-6">
               {/* Top-Right Hint Option */}
               <div
-                className="group absolute top-0.5 right-1.5 sm:right-2.5 z-20 inline-flex items-center justify-center p-1.5 rounded-lg text-gray-400 hover:text-green-400 focus-within:text-green-400 cursor-pointer touch-manipulation transition-colors"
+                className="group absolute top-0 right-0 sm:right-1 z-20 inline-flex w-11 h-11 items-center justify-center rounded-lg text-gray-400 hover:text-green-400 focus-within:text-green-400 cursor-pointer touch-manipulation transition-colors"
                 tabIndex={0}
                 role="button"
                 aria-label="Game payout info"
@@ -247,7 +247,7 @@ export default function Minesweeper() {
                       setMode('basic');
                       setBetAmount(Math.min(betAmount, 8));
                     }}
-                    className={`py-2 sm:py-2.5 px-3 rounded-lg font-bold text-xs sm:text-sm transition-all active:scale-[0.98] touch-manipulation ${
+                    className={`py-2 sm:py-2.5 px-3 min-h-11 rounded-lg font-bold text-xs sm:text-sm transition-all active:scale-[0.98] touch-manipulation ${
                       mode === 'basic'
                         ? 'bg-green-500 text-black shadow-sm shadow-green-500/20'
                         : 'bg-dark-surface text-gray-400 border border-green-500/20 hover:border-green-500/40'
@@ -258,7 +258,7 @@ export default function Minesweeper() {
                   <button
                     type="button"
                     onClick={() => setMode('advanced')}
-                    className={`py-2 sm:py-2.5 px-3 rounded-lg font-bold text-xs sm:text-sm transition-all active:scale-[0.98] touch-manipulation ${
+                    className={`py-2 sm:py-2.5 px-3 min-h-11 rounded-lg font-bold text-xs sm:text-sm transition-all active:scale-[0.98] touch-manipulation ${
                       mode === 'advanced'
                         ? 'bg-cyan-500 text-black shadow-sm shadow-cyan-500/20'
                         : 'bg-dark-surface text-gray-400 border border-cyan-500/20 hover:border-cyan-500/40'
@@ -287,7 +287,7 @@ export default function Minesweeper() {
                 disabled={balance < betAmount}
                 className={`w-full font-bold py-2.5 sm:py-3 px-4 sm:px-6 rounded-xl transition-all flex items-center justify-center gap-2 text-sm sm:text-base ${
                   balance >= betAmount
-                    ? 'bg-linear-to-r from-green-500 to-cyan-500 text-black hover:opacity-90 neon-glow cursor-pointer'
+                    ? 'bg-linear-to-r from-green-500 to-emerald-700 text-black hover:opacity-90 neon-glow cursor-pointer'
                     : 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700'
                 }`}
               >
@@ -299,7 +299,7 @@ export default function Minesweeper() {
                   onClick={cashOut}
                   className="w-full font-bold py-2.5 sm:py-3 px-4 sm:px-6 rounded-xl transition-all flex items-center justify-center gap-2 text-sm sm:text-base bg-linear-to-r from-yellow-500 to-orange-500 text-black hover:opacity-90 neon-glow cursor-pointer"
                 >
-                  Cash Out (${winnings.toFixed(2)})
+                  <span className="tabular-nums">Cash Out (${winnings.toFixed(2)})</span>
                 </button>
                 {gemsFound > 0 && (
                   <button

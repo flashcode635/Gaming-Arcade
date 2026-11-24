@@ -1,23 +1,56 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useSettings } from "@/context/settingContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useGameCurrency } from "@/context/GameCurrencyContext";
 import { SettingsIcon, GamepadIcon, BoltIcon } from "@/assets/svg/GameIcons";
 
 export default function SettingsPage() {
+  const router = useRouter();
   const { enhancedGraphics, setEnhancedGraphics } = useSettings();
   const { isDarkMode, setIsDarkMode } = useTheme();
-  const { balance, username, addBalance } = useGameCurrency();
+  const { balance, addBalance, isAuthLoaded, isSignedIn } = useGameCurrency();
+
+  // Settings are player-only: guests are sent to the login screen and come
+  // back here once they have an account.
+  useEffect(() => {
+    if (isAuthLoaded && !isSignedIn) {
+      router.replace("/login?next=%2Fsettings");
+    }
+  }, [isAuthLoaded, isSignedIn, router]);
+
+  if (!isAuthLoaded || !isSignedIn) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-black/70 px-4 text-center">
+        <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-green-500/25 bg-green-500/10 text-green-400">
+          <SettingsIcon className="h-6 w-6 animate-[spin_8s_linear_infinite]" />
+        </span>
+        <div>
+          <p className="text-sm font-semibold text-white">Checking player session…</p>
+          <p className="mt-1 text-xs text-zinc-500">
+            Settings are available to signed-in players.
+          </p>
+        </div>
+        <Link
+          href="/login?next=%2Fsettings"
+          className="text-xs font-semibold text-green-400 transition-colors hover:text-green-300"
+        >
+          Go to login →
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-black/70">
       {/* Top Header */}
-      <header className="sticky top-0 z-50 bg-black/80 backdrop-blur-md border-b border-green-500/20">
+      <header className="sticky sticky-safe-top z-50 bg-black/80 backdrop-blur-md border-b border-green-500/20">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link
-            href="/"
+            href="/arcade"
             className="flex items-center gap-2 text-green-400 hover:text-green-300 transition-colors font-semibold"
           >
             <svg
@@ -36,7 +69,7 @@ export default function SettingsPage() {
           </Link>
 
           <div className="flex items-center gap-2 text-green-400">
-            <SettingsIcon className="w-5 h-5 animate-spin-slow" />
+            <SettingsIcon className="w-5 h-5 animate-[spin_8s_linear_infinite]" />
             <span className="font-bold text-sm uppercase tracking-wider">Settings</span>
           </div>
         </div>
@@ -94,24 +127,31 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="flex items-center">
+                  {/* 44px hit target: the track stays visually h-7 inside an
+                      h-11 button so touch never misses. */}
                   <button
                     type="button"
                     role="switch"
                     aria-checked={enhancedGraphics}
                     onClick={() => setEnhancedGraphics(!enhancedGraphics)}
-                    className={`relative inline-flex h-7 py-1 w-14 shrink-0 cursor-pointer rounded-full border-2 transition-colors duration-200 ease-in-out focus:outline-none ${
-                      enhancedGraphics
-                        ? "bg-green-500 border-green-400 shadow-[0_0_12px_rgba(0,255,136,0.6)]"
-                        : "bg-gray-800 border-gray-600"
-                    }`}
+                    className="relative inline-flex h-11 w-16 shrink-0 cursor-pointer items-center justify-center rounded-full focus:outline-none"
                   >
                     <span className="sr-only">Toggle Enhanced 3D Background</span>
                     <span
                       aria-hidden="true"
-                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                        enhancedGraphics ? "translate-x-7" : "translate-x-1"
+                      className={`relative inline-flex h-7 py-1 w-14 rounded-full border-2 transition-colors duration-200 ease-in-out ${
+                        enhancedGraphics
+                          ? "bg-green-500 border-green-400 shadow-[0_0_12px_rgba(0,255,136,0.6)]"
+                          : "bg-gray-800 border-gray-600"
                       }`}
-                    />
+                    >
+                      <span
+                        aria-hidden="true"
+                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                          enhancedGraphics ? "translate-x-7" : "translate-x-1"
+                        }`}
+                      />
+                    </span>
                   </button>
                 </div>
               </div>
@@ -147,7 +187,7 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => setIsDarkMode(true)}
-                    className={`px-3 py-1.5 rounded-lg border text-sm font-semibold transition-all ${
+                    className={`px-3 min-h-11 inline-flex items-center rounded-lg border text-sm font-semibold transition-all ${
                       isDarkMode
                         ? "bg-green-500/20 border-green-500 text-green-400 shadow-[0_0_10px_rgba(0,255,136,0.3)]"
                         : "bg-black/30 border-gray-700 text-gray-400 hover:text-white"
@@ -158,7 +198,7 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => setIsDarkMode(false)}
-                    className={`px-3 py-1.5 rounded-lg border text-sm font-semibold transition-all ${
+                    className={`px-3 min-h-11 inline-flex items-center rounded-lg border text-sm font-semibold transition-all ${
                       !isDarkMode
                         ? "bg-green-500/20 border-green-500 text-green-400 shadow-[0_0_10px_rgba(0,255,136,0.3)]"
                         : "bg-black/30 border-gray-700 text-gray-400 hover:text-white"
@@ -182,7 +222,7 @@ export default function SettingsPage() {
               </div>
               <div className="text-right">
                 <span className="text-xs text-gray-400">Current Balance</span>
-                <p className="text-xl sm:text-2xl font-black font-mono text-green-400">
+                <p className="text-xl sm:text-2xl font-black font-mono text-green-400 tabular-nums">
                   ${balance.toFixed(2)}
                 </p>
               </div>

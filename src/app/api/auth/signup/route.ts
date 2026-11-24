@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getDb } from '@/lib/mongo';
 import { hashPassword, toPublicUser, validatePassword, validateUsername } from '@/lib/auth';
+import { SIGNUP_BONUS } from '@/lib/wallet-constants';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -45,8 +46,16 @@ export async function POST(request: NextRequest) {
 
     const { salt, hash } = await hashPassword(password);
     const createdAt = new Date();
+    const startingBalance = SIGNUP_BONUS;
     try {
-      await users.insertOne({ username, salt, passwordHash: hash, createdAt, lastLoginAt: createdAt });
+      await users.insertOne({
+        username,
+        salt,
+        passwordHash: hash,
+        balance: startingBalance,
+        createdAt,
+        lastLoginAt: createdAt,
+      });
     } catch (insertErr) {
       if ((insertErr as { code?: number }).code === 11000) {
         return NextResponse.json({ ok: false, error: 'Username already taken.' }, { status: 409 });
@@ -55,7 +64,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { ok: true, user: toPublicUser({ username, createdAt }) },
+      { ok: true, user: toPublicUser({ username, createdAt }), balance: startingBalance },
       { headers: { 'Cache-Control': 'no-store' } },
     );
   } catch (err) {
