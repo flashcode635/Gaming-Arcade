@@ -2,9 +2,9 @@
 
 import Link from 'next/link';
 import type { GameType } from '@/lib/games';
-import { useTheme } from '../context/ThemeContext';
-import { PlinkoIcon, SudokuIcon, TicTacToeIcon, SnakeIcon, MemoryIcon, MinesweeperIcon, GamepadIcon, BoltIcon, TrophyIcon, SettingsIcon } from '../assets/svg/GameIcons';
+import { PlinkoIcon, SudokuIcon, TicTacToeIcon, SnakeIcon, MemoryIcon, MinesweeperIcon, GamepadIcon, BoltIcon } from '../assets/svg/GameIcons';
 import { useGameCurrency } from '../context/GameCurrencyContext';
+import { TopBar } from './core/topBar';
 
 const games = [
   {
@@ -64,60 +64,15 @@ const games = [
 ];
 
 export default function Home() {
-  const { balance, username } = useGameCurrency();
-  const { isDarkMode, setIsDarkMode } = useTheme();
-  
+  const { balance } = useGameCurrency();
+
   return (
     <div className="min-h-screen flex flex-col bg-dark-card/20 backdrop-blur-sm">
-      <header className="flex-1 flex flex-col items-center justify-center px-3 sm:px-4 py-2 sm:py-6">
-        {/* Top Bar - Welcome & Balance */}
-        <div className="w-full max-w-6xl mb-6 sm:mb-8 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-linear-to-br from-green-500 to-cyan-500 flex items-center justify-center text-black font-black text-lg sm:text-xl">
-              {username.charAt(0).toUpperCase()}
-            </div>
-            <div>
-              <p className="font-sans font-normal text-zinc-500 text-xs sm:text-sm">Welcome back,</p>
-              <h2 className="font-display font-semibold text-white text-lg sm:text-xl">{username}</h2>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="text-right">
-              <p className="font-sans font-medium uppercase tracking-widest text-zinc-500 text-xs sm:text-sm">Balance</p>
-              <p className={`font-mono font-bold text-2xl sm:text-3xl tabular-nums drop-shadow ${
-                balance < 10 ? 'text-red-400' : balance < 30 ? 'text-yellow-400' : 'text-green-400'
-              }`}>
-                ${balance.toFixed(2)}
-              </p>
-            </div>
-            <button
-              onClick={() => setIsDarkMode(!isDarkMode)}
-              className="p-2 sm:p-2.5 rounded-lg bg-green-500/10 border border-green-500/30 hover:bg-green-500/20 transition-colors"
-              title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            >
-              {isDarkMode ? (
-                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
-                </svg>
-              ) : (
-                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-                </svg>
-              )}
-            </button>
-            <Link
-              href="/settings"
-              className="p-2 sm:p-2.5 rounded-lg bg-green-500/10 border border-green-500/30 hover:bg-green-500/20 text-green-400 hover:text-green-300 transition-colors flex items-center justify-center"
-              title="Settings"
-              aria-label="Settings"
-            >
-              <SettingsIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-            </Link>
-          </div>
-        </div>
+      <TopBar />
+      <header className="flex-1 flex flex-col items-center justify-center px-3 sm:px-4 py-6 sm:py-10">
         {/* Title Section */}
         <div className="text-center mb-8 sm:mb-12">
-          <h1 className="font-display font-bold text-6xl md:text-7xl uppercase tracking-widest text-white mb-3 sm:mb-4 animate-float flex gap-4">
+          <h1 className="font-display font-bold text-6xl md:text-7xl uppercase tracking-widest text-white mb-3 sm:mb-4 animate-float flex flex-col md:flex-row gap-4">
             <span className="neon-text">Neo</span>
             <span className="neon-text-cyan">Arcade</span>
           </h1>
@@ -132,9 +87,6 @@ export default function Home() {
             <span className="px-2 sm:px-3 py-1 font-mono font-medium tabular-nums bg-cyan-500/10 border border-cyan-500/30 rounded-full text-cyan-400 text-xs sm:text-sm flex items-center gap-1 sm:gap-1.5">
               <BoltIcon className="w-3 h-3 sm:w-4 sm:h-4" />
               $1 Per Turn
-            </span>
-            <span className="px-2 sm:px-3 py-1 font-mono font-medium tabular-nums bg-yellow-500/10 border border-yellow-500/30 rounded-full text-yellow-400 text-xs sm:text-sm">
-              💰 ${balance.toFixed(2)}
             </span>
           </div>
         </div>

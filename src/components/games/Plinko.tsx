@@ -345,9 +345,9 @@ export default function Plinko() {
             className="rounded-xl border border-green-500/20 bg-black max-w-full"
             style={{ maxWidth: '100%', height: 'auto' }}
           />
-          <p className="text-[11px] text-gray-500 text-center">
+          {/* <p className="text-[11px] text-gray-500 text-center">
             Outcome is decided by the server (weighted CSPRNG) — the client only replays the returned path.
-          </p>
+          </p> */}
         </div>
       </div>
     </div>
