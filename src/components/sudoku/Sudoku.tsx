@@ -254,6 +254,7 @@ export default function Sudoku() {
     startNewGame,
     difficulty,
     canStartNewGame,
+    hasStarted,
   } = game;
 
   // "Solve to win" → +$5, credited exactly once per solved game.
@@ -269,7 +270,23 @@ export default function Sudoku() {
     }
   }, [won, addBalance]);
 
-  if (board.length === 0) return null;
+  if (!hasStarted || board.length === 0) {
+    return (
+      <div className="flex min-h-screen items-center justify-center px-4 py-8">
+        <div className="w-full max-w-sm rounded-xl border border-green-500/20 bg-dark-card/90 p-6 text-center">
+          <h1 className="text-xl font-bold text-green-400">Sudoku</h1>
+          <p className="mt-2 text-sm text-gray-400">Start a round for $1.00.</p>
+          <button
+            onClick={() => startNewGame(difficulty)}
+            disabled={!canStartNewGame}
+            className="mt-5 min-h-11 w-full rounded-lg bg-green-500 px-5 py-2 font-bold text-black disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {canStartNewGame ? 'Start Game (-$1.00)' : 'Not Enough Credits'}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

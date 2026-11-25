@@ -24,9 +24,9 @@ export const TopBar = () => {
     <div className="flex w-full items-center gap-2 sm:gap-3">
       {/* brand */}
       <Link href="/" className="group flex shrink-0 items-center gap-2.5" aria-label="Neon Arcade home">
-        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br from-emerald-400 to-emerald-700 font-display text-sm font-black text-black shadow-[0_0_18px_rgba(16,185,129,0.28)] transition-transform group-hover:scale-105">
+        {/* <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br from-emerald-400 to-emerald-700 font-display text-sm font-black text-black shadow-[0_0_18px_rgba(16,185,129,0.28)] transition-transform group-hover:scale-105">
           N
-        </span>
+        </span> */}
         <span className="hidden leading-none sm:block">
           <span className="block font-display text-[13px] font-bold uppercase tracking-[0.18em] text-white">
             Neon Arcade
@@ -50,7 +50,8 @@ export const TopBar = () => {
         <span className="truncate text-[13px] text-zinc-500 transition-colors group-hover:text-zinc-300">
           Search games…
         </span>
-        <kbd className="ml-auto hidden shrink-0 items-center rounded-md border border-white/[0.08] bg-white/[0.03] px-1.5 py-0.5 font-mono text-[10px] text-zinc-600 lg:inline-flex">
+        <kbd className="ml-auto hidden shrink-0 items-center rounded-md border
+         border-white/8 bg-white/3 px-1.5 py-0.5 font-mono text-[10px] text-zinc-600 lg:inline-flex">
           Ctrl K
         </kbd>
       </button>
@@ -65,7 +66,8 @@ export const TopBar = () => {
 
       {/* wallet + account */}
       <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
-        <div className="flex items-center gap-2 rounded-lg border border-white/[0.07] bg-white/[0.025] px-2.5 py-1.5">
+        <div className="flex items-center gap-2 rounded-lg border
+         border-white/[0.07] bg-white/2.5 px-2.5 py-1.5">
           <span className="hidden font-mono text-[9px] uppercase tracking-[0.16em] text-zinc-500 sm:block">
             Wallet
           </span>

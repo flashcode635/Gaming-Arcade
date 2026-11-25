@@ -78,6 +78,7 @@ const getBestMove = (board: Board): number => {
 export default function TicTacToe() {
   const { balance, addBalance, deductBalance } = useGameCurrency();
   const [board, setBoard] = useState<Board>(Array(9).fill(null));
+  const [isGameActive, setIsGameActive] = useState(false);
   const [isXTurn, setIsXTurn] = useState(true);
   const [gameMode, setGameMode] = useState<GameMode>('ai');
   const [scores, setScores] = useState({ X: 0, O: 0, draws: 0 });
@@ -97,7 +98,7 @@ export default function TicTacToe() {
   }, []);
 
   const handleClick = (index: number) => {
-    if (board[index] || winner || isDraw) return;
+    if (!isGameActive || board[index] || winner || isDraw) return;
     if (gameMode === 'ai' && !isXTurn) return;
 
     const newBoard = [...board];
@@ -110,12 +111,10 @@ export default function TicTacToe() {
     if (newWinner) {
       setWinLine(findWinLine(newBoard));
       setScores(prev => ({ ...prev, [newWinner]: prev[newWinner as 'X' | 'O'] + 1 }));
-      // 2x per win — any human winner (X here, or either side in PvP).
-      addBalance(WIN_PAYOUT);
+      if (gameMode === 'ai' && newWinner === 'X') addBalance(WIN_PAYOUT);
     } else if (newDraw) {
       setScores(prev => ({ ...prev, draws: prev.draws + 1 }));
-      // Draw = refund.
-      addBalance(DRAW_REFUND);
+      if (gameMode === 'ai') addBalance(DRAW_REFUND);
     }
 
     setIsXTurn(!isXTurn);
@@ -135,7 +134,7 @@ export default function TicTacToe() {
             // The bot won — the round's stake stays lost.
           } else if (aiDraw) {
             setScores(prev => ({ ...prev, draws: prev.draws + 1 }));
-            addBalance(DRAW_REFUND); // draw = refund
+            addBalance(DRAW_REFUND); // AI-mode draw refunds the entry fee.
           }
           setIsXTurn(true);
         }
@@ -143,27 +142,29 @@ export default function TicTacToe() {
     }
   };
 
-  const resetGame = () => {
-    if (balance < GAME_COST) return;
-    
-    deductBalance(GAME_COST);
+  const startRound = () => {
+    if (gameMode === 'ai' && !deductBalance(GAME_COST)) return;
     setBoard(Array(9).fill(null));
     setIsXTurn(true);
     setWinLine(null);
+    setIsGameActive(true);
   };
 
   const resetAll = () => {
-    resetGame();
+    setBoard(Array(9).fill(null));
+    setIsXTurn(true);
+    setWinLine(null);
+    setIsGameActive(false);
     setScores({ X: 0, O: 0, draws: 0 });
   };
 
   const getStatus = () => {
     if (winner) {
       // The bot winning pays nothing; every other win pays 2x.
-      const paid = !(gameMode === 'ai' && winner === 'O');
+      const paid = gameMode === 'ai' && winner === 'X';
       return `${winner} Wins! 🎉${paid ? ` +$${WIN_PAYOUT}` : ''}`;
     }
-    if (isDraw) return `It's a Draw! 🤝 +$${DRAW_REFUND} refunded`;
+    if (isDraw) return `It's a Draw!${gameMode === 'ai' ? ` +$${DRAW_REFUND} refunded` : ''}`;
     if (gameMode === 'ai') {
       return isXTurn ? "Your Turn (X)" : "AI Thinking...";
     }
@@ -213,13 +214,15 @@ export default function TicTacToe() {
           </p>
         </div>
 
-        <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4 sm:mb-6 max-w-[280px] sm:max-w-[300px] mx-auto">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4 sm:mb-6
+         max-w-70 sm:max-w-75 mx-auto">
           {board.map((cell, index) => {
             const isWinCell = winLine?.includes(index);
             return (
               <button
                 key={index}
                 onClick={() => handleClick(index)}
+                disabled={!isGameActive || Boolean(cell) || Boolean(winner) || isDraw}
                 className={`aspect-square rounded-lg sm:rounded-xl text-3xl sm:text-4xl font-black flex items-center justify-center transition-all duration-200
                   ${!cell && !winner && !isDraw ? 'hover:bg-green-500/10 cursor-pointer' : 'cursor-default'}
                   ${isWinCell ? 'bg-green-500/20 border-2 border-green-500/50 scale-105' : 'bg-dark-surface border border-green-500/20'}
@@ -237,12 +240,12 @@ export default function TicTacToe() {
 
         <div className="flex gap-2 sm:gap-3">
           <button
-            onClick={resetGame}
-            disabled={balance < GAME_COST}
+            onClick={startRound}
+            disabled={gameMode === 'ai' && balance < GAME_COST}
             className="flex-1 bg-linear-to-r from-green-500 to-emerald-700 text-black font-bold py-2.5 sm:py-3 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ResetIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-            {balance >= GAME_COST ? `New Round (-$${GAME_COST})` : 'Not Enough Credits'}
+            {gameMode === 'pvp' ? (isGameActive ? 'New Match' : 'Start Match') : balance >= GAME_COST ? `New Round (-$${GAME_COST})` : 'Not Enough Credits'}
           </button>
           <button
             onClick={resetAll}

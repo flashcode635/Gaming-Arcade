@@ -17,6 +17,7 @@
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 'react';
 import {
   DROP_BET,
+  canAffordDrop,
   computeWaypoints,
   type BallPath,
   type BoardGeometry,
@@ -78,18 +79,15 @@ interface UsePlinkoGameOptions {
   username: string;
   /** Live board geometry; re-read on every drop so resizes are respected. */
   geometryRef: MutableRefObject<BoardGeometry>;
-  /** Wallet snapshot when the game opened — Reset tops up to this value. */
-  startBalance: number;
 }
 
-export function usePlinkoGame({ username, geometryRef, startBalance }: UsePlinkoGameOptions) {
-  const { balance, addBalance, deductBalance, setBalance } = useGameCurrency();
+export function usePlinkoGame({ username, geometryRef }: UsePlinkoGameOptions) {
+  const { balance, addBalance, deductBalance } = useGameCurrency();
 
   const ballsRef = useRef<ActiveBall[]>([]);
   const landEventsRef = useRef<LandEvent[]>([]);
   const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const inFlightRef = useRef(0);
-  const balanceRef = useRef(balance);
   const [pendingCount, setPendingCount] = useState(0);
 
   const [lastWin, setLastWin] = useState<number | null>(null);
@@ -97,10 +95,6 @@ export function usePlinkoGame({ username, geometryRef, startBalance }: UsePlinko
   const [recentRounds, setRecentRounds] = useState<RecentRound[]>([]);
   const [outOfCredits, setOutOfCredits] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    balanceRef.current = balance;
-  }, [balance]);
 
   const pushLandEvent = useCallback((event: LandEvent) => {
     landEventsRef.current = [...landEventsRef.current.slice(-5), event];
@@ -112,10 +106,10 @@ export function usePlinkoGame({ username, geometryRef, startBalance }: UsePlinko
       ballsRef.current = ballsRef.current.filter((b) => b.id !== ball.id);
       timersRef.current.delete(ball.id);
       setPendingCount(ballsRef.current.length);
-      if (ball.payout > 0) addBalance(ball.payout);
       const credited = readCreditedSet();
       credited.add(ball.id);
       persistCreditedSet(credited);
+      if (ball.payout > 0) addBalance(ball.payout);
       setLastWin(ball.multiplier);
       pushLandEvent({
         id: ball.id,
@@ -150,10 +144,6 @@ export function usePlinkoGame({ username, geometryRef, startBalance }: UsePlinko
     }
   }, [username]);
 
-  useEffect(() => {
-    void syncRounds();
-  }, [syncRounds]);
-
   // --- stale-while-revalidate (rounds ledger only) --------------------------
   // When the window regains focus or the network returns, quietly refresh the
   // recent-rounds list. The WALLET is deliberately never revalidated here —
@@ -187,6 +177,7 @@ export function usePlinkoGame({ username, geometryRef, startBalance }: UsePlinko
         });
         const data = await res.json();
         if (cancelled || !data?.ok || !Array.isArray(data.rounds)) return;
+        setRecentRounds(data.rounds.slice(0, MAX_RECENT));
 
         const credited = readCreditedSet();
         let owed = 0;
@@ -209,13 +200,6 @@ export function usePlinkoGame({ username, geometryRef, startBalance }: UsePlinko
   // --- drop ----------------------------------------------------------------
   const drop = useCallback(async () => {
     if (inFlightRef.current >= MAX_IN_FLIGHT) return;
-    // Conservative funds check: every unsettled ball already spent its bet.
-    const available = balanceRef.current - ballsRef.current.length * DROP_BET;
-    if (available < DROP_BET) {
-      setOutOfCredits(true);
-      return;
-    }
-
     // Charge the wallet up-front — every single drop costs the bet.
     if (!deductBalance(DROP_BET)) {
       setOutOfCredits(true);
@@ -308,7 +292,7 @@ export function usePlinkoGame({ username, geometryRef, startBalance }: UsePlinko
     }
   }, [addBalance, deductBalance, geometryRef, settleBall, username]);
 
-  // --- reset (top the shared wallet back up to the session start) ----------
+  // --- reset the board state without changing the shared wallet ------------
   const reset = useCallback(async () => {
     try {
       await fetch('/api/plinko/reset', {
@@ -325,9 +309,7 @@ export function usePlinkoGame({ username, geometryRef, startBalance }: UsePlinko
     setRecentRounds([]);
     setOutOfCredits(false);
     setError(null);
-    balanceRef.current = startBalance;
-    setBalance(startBalance);
-  }, [clearAllBalls, setBalance, startBalance, username]);
+  }, [clearAllBalls, username]);
 
   // --- geometry resync (called by the canvas on resize) --------------------
   const resyncGeometry = useCallback(() => {
@@ -346,7 +328,7 @@ export function usePlinkoGame({ username, geometryRef, startBalance }: UsePlinko
     };
   }, []);
 
-  const canDrop = !outOfCredits && balance - pendingCount * DROP_BET >= DROP_BET;
+  const canDrop = !outOfCredits && canAffordDrop(balance);
 
   return {
     ballsRef,

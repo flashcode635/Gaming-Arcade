@@ -1,10 +1,5 @@
-import type { Metadata } from "next";
-import MemoryGame from "@/components/games/MemoryGame";
-
-export const metadata: Metadata = {
-  title: "Memory Match",
-};
+import { redirect } from 'next/navigation';
 
 export default function Page() {
-  return <MemoryGame />;
+  redirect('/arcade/memory');
 }

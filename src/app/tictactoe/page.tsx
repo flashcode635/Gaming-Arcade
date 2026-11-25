@@ -1,10 +1,5 @@
-import type { Metadata } from "next";
-import TicTacToe from "@/components/games/TicTacToe";
-
-export const metadata: Metadata = {
-  title: "Tic-Tac-Toe",
-};
+import { redirect } from 'next/navigation';
 
 export default function Page() {
-  return <TicTacToe />;
+  redirect('/arcade/tictactoe');
 }

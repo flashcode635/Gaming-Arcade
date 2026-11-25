@@ -23,6 +23,11 @@ export const SLOT_COUNT = PLINKO_ROWS + 1; // 9
 /** Fixed cost per drop, enforced server-side. */
 export const DROP_BET = 1;
 
+/** Whether the current wallet balance can cover another drop. */
+export function canAffordDrop(balance: number): boolean {
+  return balance >= DROP_BET;
+}
+
 /** Balance a new (or reset) player account starts with. */
 export const STARTING_BALANCE = 100;
 

@@ -1,6 +1,6 @@
-import { createContext, useContext, useEffect, useRef, useState, type Dispatch, type SetStateAction, ReactNode } from 'react';
-import { readStoredBalance, SIGNUP_BONUS, TRIAL_BALANCE, writeStoredBalance } from '@/lib/currencyStore';
-import { clearStoredUser, readStoredUser, writeStoredUser } from '@/lib/userStore';
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type Dispatch, type SetStateAction, ReactNode } from 'react';
+import { clearStoredUser, getStoredState, setStoredBalance, setStoredUser } from '@/lib/storage/idb';
+import { SIGNUP_BONUS, TRIAL_BALANCE } from '@/lib/wallet-constants';
 import { LOGOUT_UNDO_MS } from '@/lib/wallet-constants';
 
 interface GameCurrencyContextType {
@@ -34,142 +34,216 @@ interface GameCurrencyContextType {
 }
 
 const GUEST_NAME = 'Player';
+const LOGOUT_SNAPSHOT_KEY = 'neon-arcade:logout-snapshot';
+
+function clearLogoutSnapshot() {
+  try {
+    sessionStorage.removeItem(LOGOUT_SNAPSHOT_KEY);
+  } catch {
+    // Storage can be unavailable in restricted browser contexts.
+  }
+}
+
+interface WalletState {
+  username: string;
+  balance: number;
+  sessionBaseline: number | null;
+  isAuthLoaded: boolean;
+}
+
+interface LogoutSnapshot {
+  username: string;
+  balance: number;
+  expiresAt: number;
+}
+
+const normalizeCurrency = (value: number): number =>
+  Number.isFinite(value) ? Math.max(0, Math.round(value * 100) / 100) : 0;
 
 const GameCurrencyContext = createContext<GameCurrencyContextType | undefined>(undefined);
 
 export function GameCurrencyProvider({ children }: { children: ReactNode }) {
-  const [balance, setBalanceState] = useState(TRIAL_BALANCE);
+  const [wallet, setWallet] = useState<WalletState>({
+    username: GUEST_NAME,
+    balance: TRIAL_BALANCE,
+    sessionBaseline: null,
+    isAuthLoaded: false,
+  });
   const balanceRef = useRef(TRIAL_BALANCE);
+  const usernameRef = useRef(GUEST_NAME);
   const hasLocalMutationRef = useRef(false);
-  const [username, setUsername] = useState(GUEST_NAME);
-  const [isAuthLoaded, setIsAuthLoaded] = useState(false);
-  const [sessionBaseline, setSessionBaseline] = useState<number | null>(null);
   /** Pending soft logout — committed (server sync) when the undo window ends. */
-  const pendingLogoutRef = useRef<{ timer: ReturnType<typeof setTimeout>; commit: () => void; snapshot: { username: string; balance: number } } | null>(null);
+  const pendingLogoutRef = useRef<{ timer: ReturnType<typeof setTimeout>; snapshot: LogoutSnapshot } | null>(null);
+
+  const { balance, username, sessionBaseline, isAuthLoaded } = wallet;
 
   // Boot: load the wallet and the player profile from IndexedDB, then decide
   // the starting funds. Signed-out players with no saved wallet start a $50
   // trial; signed-in players keep their saved balance (signup grants 100).
   useEffect(() => {
     let active = true;
-    void Promise.all([
-      readStoredBalance().catch(() => null),
-      readStoredUser().catch(() => null),
-    ])
-      .then(([storedBalance, storedUser]) => {
-        if (!active || hasLocalMutationRef.current) return;
-
-        if (storedUser?.username) setUsername(storedUser.username);
-
-        if (typeof storedBalance === 'number') {
-          balanceRef.current = storedBalance;
-          setBalanceState(storedBalance);
-          setSessionBaseline(storedBalance);
-        } else if (storedUser?.username) {
-          balanceRef.current = SIGNUP_BONUS;
-          setBalanceState(SIGNUP_BONUS);
-          setSessionBaseline(SIGNUP_BONUS);
-        } else {
-          balanceRef.current = TRIAL_BALANCE;
-          setBalanceState(TRIAL_BALANCE);
-          setSessionBaseline(TRIAL_BALANCE);
+    void getStoredState()
+      .then(({ balance: storedBalance, user: storedUser }) => {
+        if (!active) return;
+        if (hasLocalMutationRef.current) {
+          setWallet(current => ({ ...current, isAuthLoaded: true }));
+          return;
         }
+
+        const hydratedBalance = normalizeCurrency(
+          typeof storedBalance === 'number'
+            ? storedBalance
+            : storedUser?.username
+              ? SIGNUP_BONUS
+              : TRIAL_BALANCE,
+        );
+        const hydratedUsername = storedUser?.username || GUEST_NAME;
+        balanceRef.current = hydratedBalance;
+        usernameRef.current = hydratedUsername;
+        setWallet({
+          username: hydratedUsername,
+          balance: hydratedBalance,
+          sessionBaseline: hydratedBalance,
+          isAuthLoaded: true,
+        });
       })
-      .finally(() => {
-        if (active) setIsAuthLoaded(true);
+      .catch(() => {
+        if (active) setWallet(current => ({ ...current, isAuthLoaded: true }));
       });
     return () => {
       active = false;
     };
   }, []);
 
-  const setBalance: Dispatch<SetStateAction<number>> = (value) => {
-    const nextBalance = typeof value === 'function' ? value(balanceRef.current) : value;
+  const setBalance = useCallback<Dispatch<SetStateAction<number>>>((value) => {
+    const nextBalance = normalizeCurrency(typeof value === 'function' ? value(balanceRef.current) : value);
     hasLocalMutationRef.current = true;
     balanceRef.current = nextBalance;
-    setBalanceState(nextBalance);
-    void writeStoredBalance(nextBalance).catch(() => {
+    setWallet(current => ({ ...current, balance: nextBalance }));
+    void setStoredBalance(nextBalance).catch(() => {
       console.error('Could not save the wallet to IndexedDB.');
     });
-  };
+  }, []);
 
-  const addBalance = (amount: number) => {
+  const addBalance = useCallback((amount: number) => {
+    if (!Number.isFinite(amount)) return;
     setBalance(prev => prev + amount);
-  };
+  }, [setBalance]);
 
-  const deductBalance = (amount: number): boolean => {
-    if (balanceRef.current >= amount) {
+  const deductBalance = useCallback((amount: number): boolean => {
+    if (!Number.isFinite(amount) || amount < 0) return false;
+    if (balanceRef.current >= normalizeCurrency(amount)) {
       setBalance(prev => prev - amount);
       return true;
     }
     return false;
-  };
+  }, [setBalance]);
 
-  const cancelPendingLogout = () => {
-    if (!pendingLogoutRef.current) return;
-    clearTimeout(pendingLogoutRef.current.timer);
-    pendingLogoutRef.current = null;
-  };
+  const cancelPendingLogout = useCallback(() => {
+    if (pendingLogoutRef.current) {
+      clearTimeout(pendingLogoutRef.current.timer);
+      pendingLogoutRef.current = null;
+    }
+    clearLogoutSnapshot();
+  }, []);
 
-  const loginUser = (name: string, options?: { balance?: number }) => {
+  const setUsername = useCallback((name: string) => {
+    usernameRef.current = name;
+    setWallet(current => ({ ...current, username: name }));
+  }, []);
+
+  const loginUser = useCallback((name: string, options?: { balance?: number }) => {
     // Signing back in (or an Undo) cancels any pending logout sync.
     cancelPendingLogout();
-    setUsername(name);
-    void writeStoredUser(name).catch(() => {
+    usernameRef.current = name;
+    setWallet(current => ({ ...current, username: name }));
+    void setStoredUser(name).catch(() => {
       console.error('Could not save the player profile to IndexedDB.');
     });
-    if (typeof options?.balance === 'number') {
+    if (typeof options?.balance === 'number' && Number.isFinite(options.balance)) {
+      const nextBalance = normalizeCurrency(options.balance);
       hasLocalMutationRef.current = true;
-      balanceRef.current = options.balance;
-      setBalanceState(options.balance);
-      void writeStoredBalance(options.balance).catch(() => {
+      balanceRef.current = nextBalance;
+      setWallet(current => ({ ...current, balance: nextBalance }));
+      void setStoredBalance(nextBalance).catch(() => {
         console.error('Could not save the wallet to IndexedDB.');
       });
     }
-  };
+  }, [cancelPendingLogout]);
 
   /** Switches the UI to the guest trial without touching the server. */
-  const enterGuestMode = () => {
-    setUsername(GUEST_NAME);
+  const enterGuestMode = useCallback(() => {
+    usernameRef.current = GUEST_NAME;
+    setWallet(current => ({ ...current, username: GUEST_NAME }));
     void clearStoredUser().catch(() => {
       console.error('Could not clear the player profile from IndexedDB.');
     });
     hasLocalMutationRef.current = true;
     balanceRef.current = TRIAL_BALANCE;
-    setBalanceState(TRIAL_BALANCE);
-    void writeStoredBalance(TRIAL_BALANCE).catch(() => {
+    setWallet(current => ({ ...current, balance: TRIAL_BALANCE }));
+    void setStoredBalance(TRIAL_BALANCE).catch(() => {
       console.error('Could not reset the wallet to trial mode.');
     });
-  };
+  }, []);
 
-  const beginLogout = () => {
+  const beginLogout = useCallback(() => {
     cancelPendingLogout();
-    const snapshot = { username, balance: balanceRef.current };
+    const snapshot: LogoutSnapshot = {
+      username: usernameRef.current,
+      balance: balanceRef.current,
+      expiresAt: Date.now() + LOGOUT_UNDO_MS,
+    };
+    try {
+      sessionStorage.setItem(LOGOUT_SNAPSHOT_KEY, JSON.stringify(snapshot));
+    } catch {
+      // The immediate server sync still protects the wallet if storage is unavailable.
+    }
+    void fetch('/api/auth/balance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(snapshot),
+      keepalive: true,
+    }).catch(() => undefined);
     enterGuestMode();
 
-    let committed = false;
-    const commit = () => {
-      // A sign-in or Undo during the window cancels the pending sync.
-      if (committed || pendingLogoutRef.current === null) return;
-      committed = true;
+    const timer = setTimeout(() => {
       pendingLogoutRef.current = null;
-      void fetch('/api/auth/balance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: snapshot.username, balance: snapshot.balance }),
-      }).catch(() => undefined);
-    };
+      clearLogoutSnapshot();
+    }, LOGOUT_UNDO_MS);
+    pendingLogoutRef.current = { timer, snapshot };
+  }, [cancelPendingLogout, enterGuestMode]);
 
-    const timer = setTimeout(commit, LOGOUT_UNDO_MS);
-    pendingLogoutRef.current = { timer, commit, snapshot };
-  };
-
-  const undoLogout = () => {
+  const undoLogout = useCallback(() => {
     const pending = pendingLogoutRef.current;
-    if (!pending) return;
+    let snapshot = pending?.snapshot;
+    if (!snapshot) {
+      try {
+        const stored = JSON.parse(sessionStorage.getItem(LOGOUT_SNAPSHOT_KEY) ?? 'null') as Partial<LogoutSnapshot> | null;
+        if (
+          stored &&
+          typeof stored.username === 'string' &&
+          typeof stored.balance === 'number' &&
+          Number.isFinite(stored.balance) &&
+          typeof stored.expiresAt === 'number' &&
+          stored.expiresAt > Date.now()
+        ) {
+          snapshot = {
+            username: stored.username,
+            balance: normalizeCurrency(stored.balance),
+            expiresAt: stored.expiresAt,
+          };
+        }
+      } catch {
+        // Ignore missing, malformed, or unavailable session storage.
+      }
+    }
+    if (!snapshot || snapshot.expiresAt <= Date.now()) {
+      cancelPendingLogout();
+      return;
+    }
     cancelPendingLogout();
-    loginUser(pending.snapshot.username, { balance: pending.snapshot.balance });
-  };
+    loginUser(snapshot.username, { balance: snapshot.balance });
+  }, [cancelPendingLogout, loginUser]);
 
   const isSignedIn = isAuthLoaded && username !== GUEST_NAME;
 

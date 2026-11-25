@@ -26,7 +26,7 @@ const ArrowIcon = ({ className }: { className?: string }) => (
 function HubSkeleton() {
   return (
     <div className="flex min-h-screen flex-col" aria-hidden>
-      <div className="border-b border-white/[0.06]">
+      <div className="border-b border-white/6">
         <div className="mx-auto flex min-h-16 w-full max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-8">
           <Skeleton className="h-9 w-9 rounded-xl" />
           <Skeleton className="hidden h-4 w-28 sm:block" />
@@ -47,9 +47,9 @@ function HubSkeleton() {
           </div>
           <Skeleton className="h-16 w-full max-w-md rounded-xl lg:w-80" />
         </div>
-        <Skeleton className="mt-6 h-[74px] w-full rounded-2xl" />
+        <Skeleton className="mt-6 h-18.5 w-full rounded-2xl" />
 
-        <div className="mt-10 flex items-end justify-between gap-4 border-b border-white/[0.06] pb-4">
+        <div className="mt-10 flex items-end justify-between gap-4 border-b border-white/6 pb-4">
           <div className="space-y-2">
             <Skeleton className="h-3 w-20" />
             <Skeleton className="h-6 w-36" />
@@ -70,7 +70,7 @@ function HubSkeleton() {
               <Skeleton className="mt-4 h-5 w-32" />
               <Skeleton className="mt-2 h-4 w-full" />
               <Skeleton className="mt-1.5 h-4 w-3/4" />
-              <div className="mt-auto flex items-center justify-between border-t border-white/[0.06] pt-4">
+              <div className="mt-auto flex items-center justify-between border-t border-white/6 pt-4">
                 <Skeleton className="h-4 w-20" />
                 <Skeleton className="h-6 w-20 rounded-md" />
               </div>
@@ -115,7 +115,7 @@ export default function ArcadeHub() {
                 Neon Arcade <span className="text-zinc-700">/</span> Player lobby
               </p>
               <h1 className="mt-3 font-display text-4xl font-bold leading-[1.05] tracking-tight text-white sm:text-5xl xl:text-6xl">
-                Choose your <span className="text-emerald-300 neon-text">game.</span>
+                Choose your <span className="text-emerald-100 neon-text">game.</span>
               </h1>
               <p className="mt-3 max-w-xl text-sm leading-relaxed text-zinc-500 sm:text-base">
                 Six quick cabinets, one shared wallet. Every round costs $1 — win it back, then take
@@ -123,7 +123,7 @@ export default function ArcadeHub() {
               </p>
             </div>
 
-            <dl className="grid w-full max-w-md shrink-0 grid-cols-3 overflow-hidden rounded-xl border border-white/[0.07] bg-white/[0.02] lg:w-auto">
+            <dl className="grid w-full max-w-md shrink-0 grid-cols-3 overflow-hidden rounded-xl border border-white/6 bg-white/2 lg:w-auto">
               {[
                 { label: 'Cabinets', value: '06' },
                 { label: 'Per play', value: '$1' },
@@ -131,7 +131,7 @@ export default function ArcadeHub() {
               ].map((stat, index) => (
                 <div
                   key={stat.label}
-                  className={`px-4 py-3 ${index > 0 ? 'border-l border-white/[0.06]' : ''}`}
+                  className={`px-4 py-3 ${index > 0 ? 'border-l border-white/6' : ''}`}
                 >
                   <dt className="font-mono text-[9px] uppercase tracking-[0.18em] text-zinc-500">
                     {stat.label}
@@ -222,7 +222,7 @@ export default function ArcadeHub() {
 
         {/* ----------------------------- cabinets ---------------------------- */}
         <section id="cabinets" className="mt-10 scroll-mt-24 sm:mt-12">
-          <div className="flex flex-wrap items-end justify-between gap-4 border-b border-white/[0.06] pb-4">
+          <div className="flex flex-wrap items-end justify-between gap-4 border-b border-white/6 pb-4">
             <div>
               <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-zinc-500">
                 The floor
@@ -300,7 +300,7 @@ export default function ArcadeHub() {
                     </p>
                   </div>
 
-                  <div className="relative mt-auto flex items-center justify-between gap-3 border-t border-white/[0.06] pt-4">
+                  <div className="relative mt-auto flex items-center justify-between gap-3 border-t border-white/6 pt-4">
                     <span
                       className="arcade-accent inline-flex items-center gap-1.5 text-xs font-semibold"
                       style={{ color: locked ? '#f87171' : game.accent }}
@@ -322,7 +322,7 @@ export default function ArcadeHub() {
         </section>
       </main>
 
-      <footer className="border-t border-white/[0.06]">
+      <footer className="border-t border-white/6">
         <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-3 px-4 py-6 sm:flex-row sm:px-6 lg:px-8">
           <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-600">
             Neon Arcade <span className="px-1 text-zinc-800">·</span> Wallet in IndexedDB

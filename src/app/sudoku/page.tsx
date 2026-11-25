@@ -1,10 +1,5 @@
-import type { Metadata } from "next";
-import Sudoku from "@/components/sudoku/Sudoku";
-
-export const metadata: Metadata = {
-  title: "Sudoku",
-};
+import { redirect } from 'next/navigation';
 
 export default function Page() {
-  return <Sudoku />;
+  redirect('/arcade/sudoku');
 }

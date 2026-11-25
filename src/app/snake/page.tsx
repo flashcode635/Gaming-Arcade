@@ -1,10 +1,5 @@
-import type { Metadata } from "next";
-import Snake from "@/components/games/Snake";
-
-export const metadata: Metadata = {
-  title: "Snake",
-};
+import { redirect } from 'next/navigation';
 
 export default function Page() {
-  return <Snake />;
+  redirect('/arcade/snake');
 }

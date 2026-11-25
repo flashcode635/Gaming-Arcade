@@ -1,7 +1,7 @@
 // useSudokuGame.ts
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Board,
   CellNotes,
@@ -19,6 +19,7 @@ export const SUDOKU_WIN_PAYOUT = 5;
 
 export function useSudokuGame(initialDifficulty: Difficulty = 'medium') {
   const { balance, deductBalance } = useGameCurrency();
+  const [hasStarted, setHasStarted] = useState(false);
   const [board, setBoard] = useState<Board>([]);
   const [solution, setSolution] = useState<number[][]>([]);
   const [given, setGiven] = useState<boolean[][]>([]);
@@ -38,19 +39,11 @@ export function useSudokuGame(initialDifficulty: Difficulty = 'medium') {
   // Derived instead of stored: three mistakes is always exactly game over —
   // no effect needed to "sync" it.
   const gameOver = errorCount >= MAX_ERRORS;
-  const isPlayable = !won && !timeUp && !gameOver && !isPaused;
+  const isPlayable = hasStarted && !won && !timeUp && !gameOver && !isPaused;
 
-  // Context functions are re-created on every provider render — keep the
-  // latest one in a ref so startNewGame stays referentially stable (the mount
-  // effect below must not re-run on every render).
-  const deductRef = useRef(deductBalance);
-  useEffect(() => {
-    deductRef.current = deductBalance;
-  }, [deductBalance]);
-
-  /** User-initiated games cost $1; the auto-generated first game is free. */
-  const startNewGame = useCallback((diff: Difficulty, opts?: { free?: boolean }) => {
-    if (!opts?.free && !deductRef.current(SUDOKU_COST)) return;
+  /** Every playable Sudoku round requires a successful entry debit. */
+  const startNewGame = useCallback((diff: Difficulty) => {
+    if (!deductBalance(SUDOKU_COST)) return;
     const { puzzle, solution: sol } = generatePuzzle(diff);
     setBoard(puzzle);
     setSolution(sol);
@@ -67,16 +60,8 @@ export function useSudokuGame(initialDifficulty: Difficulty = 'medium') {
     setDifficulty(diff);
     setTimer(DIFFICULTY_TIME_LIMITS[diff]);
     setIsRunning(true);
-  }, []);
-
-  // First puzzle must be generated on the client (random), while the server
-  // renders an empty grid — the documented two-pass pattern. startNewGame
-  // fans out into many setState calls, so the effect-based lint is silenced
-  // for this mount-only generation.
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    startNewGame(initialDifficulty, { free: true });
-  }, [startNewGame, initialDifficulty]);
+    setHasStarted(true);
+  }, [deductBalance]);
 
   // Countdown timer
   useEffect(() => {
@@ -293,7 +278,7 @@ export function useSudokuGame(initialDifficulty: Difficulty = 'medium') {
   return {
     // state
     board, given, selectedCell, errors, errorCount, notes, notesMode, history,
-    won, timeUp, gameOver, isPaused, difficulty, timer, isPlayable, conflictCells,
+    won, timeUp, gameOver, isPaused, difficulty, timer, isPlayable, conflictCells, hasStarted,
     // wallet
     balance,
     canStartNewGame: balance >= SUDOKU_COST,

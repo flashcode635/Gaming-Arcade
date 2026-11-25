@@ -1,10 +1,5 @@
-import type { Metadata } from "next";
-import Minesweeper from "@/components/games/Minesweeper";
-
-export const metadata: Metadata = {
-  title: "Minesweeper",
-};
+import { redirect } from 'next/navigation';
 
 export default function Page() {
-  return <Minesweeper />;
+  redirect('/arcade/minesweeper');
 }

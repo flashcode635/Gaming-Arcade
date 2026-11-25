@@ -109,6 +109,7 @@ export default function MemoryGame() {
   const [matches, setMatches] = useState(0);
   const [timer, setTimer] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
   const [bestScore, setBestScore] = useState<number | null>(null);
   const [isLocked, setIsLocked] = useState(false);
   const timeoutsRef = useRef<number[]>([]);
@@ -186,7 +187,7 @@ export default function MemoryGame() {
   }, [flippedCards, cards, matches, moves, totalPairs, addBalance]);
 
   const handleCardClick = (id: number) => {
-    if (isLocked) return;
+    if (!hasStarted || isLocked) return;
     const card = cards.find(c => c.id === id);
     if (!card || card.isFlipped || card.isMatched) return;
     if (flippedCards.length >= 2) return;
@@ -206,9 +207,7 @@ export default function MemoryGame() {
   };
 
   const resetGame = () => {
-    if (balance < GAME_COST) return;
-
-    deductBalance(GAME_COST);
+    if (!deductBalance(GAME_COST)) return;
     timeoutsRef.current.forEach(t => clearTimeout(t));
     timeoutsRef.current = [];
     setCards(createBoard());
@@ -218,6 +217,7 @@ export default function MemoryGame() {
     setTimer(0);
     setIsRunning(false);
     setIsLocked(false);
+    setHasStarted(true);
   };
 
   const formatTime = (seconds: number) => {
@@ -265,7 +265,7 @@ export default function MemoryGame() {
                 className="w-full bg-linear-to-r from-green-500 to-emerald-700 text-black font-bold py-2.5 sm:py-3 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ResetIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-                {balance >= GAME_COST ? `New Game (-$${GAME_COST})` : 'Not Enough Credits'}
+                {!hasStarted ? `Start Game (-$${GAME_COST})` : balance >= GAME_COST ? `New Game (-$${GAME_COST})` : 'Not Enough Credits'}
               </button>
 
               <p className="text-gray-600 text-xs text-center mt-3">
@@ -283,7 +283,7 @@ export default function MemoryGame() {
               key={card.id}
               onClick={() => handleCardClick(card.id)}
               className="flip-card aspect-square"
-              disabled={card.isFlipped || card.isMatched || isLocked}
+              disabled={!hasStarted || card.isFlipped || card.isMatched || isLocked}
             >
               <div className={`flip-card-inner ${card.isFlipped || card.isMatched ? 'flipped' : ''} ${card.isMatched ? 'matched' : ''}`}>
                 <div className="flip-card-back bg-dark-surface border-2 border-cyan-500/20 hover:border-cyan-500/40 hover:bg-cyan-500/5 cursor-pointer">

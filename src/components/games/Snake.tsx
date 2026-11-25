@@ -21,6 +21,7 @@ export default function Snake() {
   const [food, setFood] = useState<Position>({ x: 15, y: 15 });
   const [direction, setDirection] = useState<Direction>('RIGHT');
   const [isRunning, setIsRunning] = useState(false);
+  const [isGameActive, setIsGameActive] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [gameWon, setGameWon] = useState(false);
   const [score, setScore] = useState(0);
@@ -62,9 +63,7 @@ export default function Snake() {
   }, []);
 
   const resetGame = useCallback(() => {
-    if (balance < GAME_COST) return;
-
-    deductBalance(GAME_COST);
+    if (!deductBalance(GAME_COST)) return false;
     creditedApplesRef.current = 0;
     const initialSnake = [{ x: 10, y: 10 }];
     setSnake(initialSnake);
@@ -75,8 +74,10 @@ export default function Snake() {
     setGameWon(false);
     setScore(0);
     setSpeed(INITIAL_SPEED);
-    setIsRunning(false);
-  }, [generateFood, balance, deductBalance]);
+    setIsRunning(true);
+    setIsGameActive(true);
+    return true;
+  }, [generateFood, deductBalance]);
 
   const moveSnake = useCallback(() => {
     setSnake(prevSnake => {
@@ -140,6 +141,7 @@ export default function Snake() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isGameActive) return;
       const dir = directionRef.current;
       switch (e.key) {
         case 'ArrowUp':
@@ -177,9 +179,10 @@ export default function Snake() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [gameOver, gameWon]);
+  }, [gameOver, gameWon, isGameActive]);
 
   const handleDirectionButton = (newDir: Direction) => {
+    if (!isGameActive) return;
     const dir = directionRef.current;
     if (
       (newDir === 'UP' && dir !== 'DOWN') ||
@@ -285,16 +288,13 @@ export default function Snake() {
             )}
 
             {!isRunning && !gameOver && !gameWon && (
-              <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center">
+              <div className="absolute inset-0 bg-black flex flex-col items-center justify-center">
                 <SnakeIcon className="w-10 h-10 text-green-400 mb-2" />
                 <p className="text-green-400 text-xl font-bold mb-2">Snake</p>
                 <p className="text-gray-400 text-sm mb-4">Press Space or tap Start</p>
                 <button
                   onClick={() => {
-                    if (balance >= GAME_COST) {
-                      resetGame();
-                      setIsRunning(true);
-                    }
+                    if (resetGame()) setIsRunning(true);
                   }}
                   disabled={balance < GAME_COST}
                   className="bg-green-500 text-black font-bold py-2.5 px-6 rounded-lg hover:bg-green-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-11"
@@ -322,7 +322,7 @@ export default function Snake() {
             ◀
           </button>
           <button
-            onClick={() => { if (!gameOver && !gameWon) setIsRunning(prev => !prev); }}
+            onClick={() => { if (isGameActive && !gameOver && !gameWon) setIsRunning(prev => !prev); }}
             className="bg-dark-surface border border-cyan-500/30 text-cyan-400 font-bold py-3 rounded-lg hover:bg-cyan-500/10 transition-colors text-sm"
           >
             {isRunning ? '⏸' : '▶'}
@@ -346,7 +346,8 @@ export default function Snake() {
         <div className="flex gap-2 sm:gap-3">
           <button
             onClick={resetGame}
-            className="flex-1 bg-linear-to-r from-green-500 to-emerald-700 text-black font-bold py-2.5 sm:py-3 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 text-sm sm:text-base"
+            disabled={balance < GAME_COST}
+            className="flex-1 bg-linear-to-r from-green-500 to-emerald-700 text-black font-bold py-2.5 sm:py-3 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ResetIcon className="w-4 h-4 sm:w-5 sm:h-5" />
             New Game

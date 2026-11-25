@@ -1,10 +1,5 @@
-import type { Metadata } from "next";
-import Plinko from "@/components/games/Plinko";
-
-export const metadata: Metadata = {
-  title: "Plinko",
-};
+import { redirect } from 'next/navigation';
 
 export default function Page() {
-  return <Plinko />;
+  redirect('/arcade/plinko');
 }

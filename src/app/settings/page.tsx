@@ -12,7 +12,7 @@ export default function SettingsPage() {
   const router = useRouter();
   const { enhancedGraphics, setEnhancedGraphics } = useSettings();
   const { isDarkMode, setIsDarkMode } = useTheme();
-  const { balance, addBalance, isAuthLoaded, isSignedIn } = useGameCurrency();
+  const { balance, isAuthLoaded, isSignedIn } = useGameCurrency();
 
   // Settings are player-only: guests are sent to the login screen and come
   // back here once they have an account.
@@ -228,18 +228,6 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <div className="border-t border-green-500/10 pt-4 flex flex-wrap items-center justify-between gap-3">
-              <span className="text-xs sm:text-sm text-gray-400">
-                Running low on tokens? Refill demo credits anytime.
-              </span>
-              <button
-                type="button"
-                onClick={() => addBalance(50)}
-                className="px-4 py-2 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 text-green-400 rounded-lg text-sm font-semibold transition-colors"
-              >
-                + Add $50 Demo Credits
-              </button>
-            </div>
           </section>
         </div>
       </main>

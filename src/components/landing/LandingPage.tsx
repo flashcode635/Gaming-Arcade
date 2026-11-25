@@ -85,9 +85,9 @@ export default function LandingPage() {
       <nav className="sticky sticky-safe-top z-50 bg-black/70 backdrop-blur-md border-b border-green-500/15">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
-            <span className="w-9 h-9 rounded-xl bg-linear-to-br from-green-500 to-emerald-700 flex items-center justify-center text-black font-black neon-glow">
+            {/* <span className="w-9 h-9 rounded-xl bg-linear-to-br from-green-500 to-emerald-700 flex items-center justify-center text-black font-black neon-glow">
               N
-            </span>
+            </span> */}
             <span className="font-display font-bold text-lg uppercase tracking-widest text-white">
               <span className="neon-text">Neon</span> <span className="neon-text-cyan">Arcade</span>
             </span>
@@ -127,39 +127,40 @@ export default function LandingPage() {
 
       {/* ------------------------------- hero ------------------------------ */}
       <header className="relative overflow-hidden">
-        <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-[46rem] h-[46rem] rounded-full bg-green-500/8 blur-3xl" />
+        <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2
+         w-184 h-184 rounded-full bg-green-500/8 blur-3xl" />
         <div className="pointer-events-none absolute top-40 -right-40 w-96 h-96 rounded-full bg-cyan-500/10 blur-3xl" />
 
         <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 pt-16 pb-14 sm:pt-24 sm:pb-20 grid lg:grid-cols-2 gap-12 items-center">
           <div>
-            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/30 text-green-400 text-xs font-mono font-semibold mb-6">
+            {/* <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/30 text-green-400 text-xs font-mono font-semibold mb-6">
               <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse-neon" />
               6 games · 1 balance · 0 installs
-            </span>
+            </span> */}
             <h1 className="font-display font-bold text-4xl sm:text-5xl xl:text-6xl leading-[1.05] tracking-tight text-white">
               Play. Win coins.
               <br />
               <span className="neon-text text-green-100">Climb</span>{' '}
-              <span className="neon-text-cyan text-cyan-300">the board.</span>
+              <span className="neon-text-cyan text-cyan-100">the board.</span>
             </h1>
             <p className="mt-5 text-zinc-400 text-base sm:text-lg leading-relaxed max-w-xl">
-              Neon Arcade is a browser playground of six quick games — Plinko,
-              Snake, Memory, Minesweeper, Sudoku and Tic-Tac-Toe — all running on
+              Neon Arcade is a browser playground of six quick games all running on
               one shared coin wallet. Create an account and get{' '}
-              <span className="text-green-400 font-semibold">$100 free coins</span>,
+              <span className="text-green-100 font-semibold">$100 free coins</span>,
               or jump straight in with the{' '}
-              <span className="text-cyan-300 font-semibold">$50 guest trial</span>.
+              <span className="text-cyan-100 font-semibold">$50 guest trial</span>.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link
                 href="/signup"
-                className="px-6 py-3.5 rounded-xl bg-linear-to-r from-green-500 to-emerald-700 text-black font-bold hover:opacity-90 hover:shadow-lg hover:shadow-green-500/25 transition-all"
+                className="px-6 py-3.5 rounded-xl bg-linear-to-r from-green-900
+                 to-emerald-900 text-white font-bold hover:opacity-90 hover:shadow-lg hover:shadow-green-500/25 transition-all"
               >
                 Create free account — $100 coins
               </Link>
               <Link
                 href="/arcade"
-                className="px-6 py-3.5 rounded-xl border border-cyan-500/40 bg-cyan-500/10 text-cyan-300 font-semibold hover:bg-cyan-500/20 transition-colors"
+                className="px-6 py-3.5 rounded-xl border border-cyan-500/40 bg-cyan-500/10 text-cyan-100 font-semibold hover:bg-cyan-500/20 transition-colors"
               >
                 Try as guest — $50
               </Link>
@@ -233,7 +234,7 @@ export default function LandingPage() {
                 className="group relative bg-dark-card/60 backdrop-blur-sm border border-white/10 rounded-2xl p-5 sm:p-6 card-hover overflow-hidden"
               >
                 <div
-                  className="absolute inset-x-0 top-0 h-[2px] opacity-70"
+                  className="absolute inset-x-0 top-0 h-0.5 opacity-70"
                   style={{ background: `linear-gradient(90deg, transparent, ${game.accent}, transparent)` }}
                 />
                 <div className="flex items-start justify-between mb-4">
@@ -289,7 +290,7 @@ export default function LandingPage() {
       <section id="how" className="border-y border-white/5 bg-dark-card/20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-14">
           <h2 className="font-display font-bold text-2xl sm:text-3xl text-white tracking-tight text-center">
-            From zero to <span className="neon-text-cyan text-cyan-300">first win</span> in three steps
+            From zero to <span className="neon-text-cyan text-cyan-200">first win</span> in three steps
           </h2>
           <div className="grid md:grid-cols-3 gap-4 sm:gap-6 mt-10">
             {STEPS.map((step) => (

@@ -129,9 +129,6 @@ export default function Plinko() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const geometryRef = useRef<BoardGeometry>(buildGeometry(520, 520));
   const [canvasSize, setCanvasSize] = useState({ width: 520, height: 520 });
-
-  // Wallet snapshot from page load — the "even" line for profit and the
-  // top-up target for Reset ($100 players / $50 guests alike).
   const sessionStart = sessionBaseline ?? balance;
 
   const {
@@ -147,7 +144,7 @@ export default function Plinko() {
     reset,
     resyncGeometry,
     clearError,
-  } = usePlinkoGame({ username, geometryRef, startBalance: sessionStart });
+  } = usePlinkoGame({ username, geometryRef });
 
   // Responsive canvas size (same behaviour as the old physics version).
   useEffect(() => {
